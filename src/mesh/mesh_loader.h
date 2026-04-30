@@ -25,96 +25,97 @@ namespace mesh_loader {
 namespace detail {
 
 inline bool startsWith(std::string_view s, std::string_view prefix) {
-  return s.size() >= prefix.size() && s.substr(0, prefix.size()) == prefix;
+    return s.size() >= prefix.size() && s.substr(0, prefix.size()) == prefix;
 }
 
 inline std::string_view ltrim(std::string_view s) {
-  while (!s.empty() && (s.front() == ' ' || s.front() == '\t' || s.front() == '\r')) {
-    s.remove_prefix(1);
-  }
-  return s;
+    while (!s.empty() &&
+           (s.front() == ' ' || s.front() == '\t' || s.front() == '\r')) {
+        s.remove_prefix(1);
+    }
+    return s;
 }
 
 inline bool parseInt(std::string_view s, int &out) {
-  s = ltrim(s);
-  if (s.empty()) {
-    return false;
-  }
-  const char *begin = s.data();
-  const char *end = s.data() + s.size();
-  auto result = std::from_chars(begin, end, out);
-  return result.ec == std::errc{};
+    s = ltrim(s);
+    if (s.empty()) {
+        return false;
+    }
+    const char *begin = s.data();
+    const char *end = s.data() + s.size();
+    auto result = std::from_chars(begin, end, out);
+    return result.ec == std::errc{};
 }
 
 struct FaceVertexIndex {
-  int v = 0;
-  int vt = 0;
-  int vn = 0;
+    int v = 0;
+    int vt = 0;
+    int vn = 0;
 };
 
 inline FaceVertexIndex parseFaceVertex(std::string_view token) {
-  // token forms: v, v/vt, v//vn, v/vt/vn
-  FaceVertexIndex out;
+    // token forms: v, v/vt, v//vn, v/vt/vn
+    FaceVertexIndex out;
 
-  auto nextPart = [&](std::string_view &t) -> std::string_view {
-    auto slash = t.find('/');
-    if (slash == std::string_view::npos) {
-      auto part = t;
-      t = {};
-      return part;
+    auto nextPart = [&](std::string_view &t) -> std::string_view {
+        auto slash = t.find('/');
+        if (slash == std::string_view::npos) {
+            auto part = t;
+            t = {};
+            return part;
+        }
+        auto part = t.substr(0, slash);
+        t.remove_prefix(slash + 1);
+        return part;
+    };
+
+    std::string_view t = token;
+    std::string_view p1 = nextPart(t);
+    std::string_view p2 = nextPart(t);
+    std::string_view p3 = t;
+
+    (void)parseInt(p1, out.v);
+    if (!p2.empty()) {
+        (void)parseInt(p2, out.vt);
     }
-    auto part = t.substr(0, slash);
-    t.remove_prefix(slash + 1);
-    return part;
-  };
-
-  std::string_view t = token;
-  std::string_view p1 = nextPart(t);
-  std::string_view p2 = nextPart(t);
-  std::string_view p3 = t;
-
-  (void)parseInt(p1, out.v);
-  if (!p2.empty()) {
-    (void)parseInt(p2, out.vt);
-  }
-  if (!p3.empty()) {
-    (void)parseInt(p3, out.vn);
-  }
-  return out;
+    if (!p3.empty()) {
+        (void)parseInt(p3, out.vn);
+    }
+    return out;
 }
 
 inline int resolveObjIndex(int idx, std::size_t count) {
-  // OBJ indices are 1-based. Negative indices are relative to the end.
-  if (idx > 0) {
-    return idx - 1;
-  }
-  if (idx < 0) {
-    return static_cast<int>(count) + idx;
-  }
-  return -1;
+    // OBJ indices are 1-based. Negative indices are relative to the end.
+    if (idx > 0) {
+        return idx - 1;
+    }
+    if (idx < 0) {
+        return static_cast<int>(count) + idx;
+    }
+    return -1;
 }
 
 struct VertexKey {
-  int v;
-  int vt;
-  int vn;
+    int v;
+    int vt;
+    int vn;
 
-  bool operator==(const VertexKey &other) const {
-    return v == other.v && vt == other.vt && vn == other.vn;
-  }
+    bool operator==(const VertexKey &other) const {
+        return v == other.v && vt == other.vt && vn == other.vn;
+    }
 };
 
 struct VertexKeyHasher {
-  std::size_t operator()(const VertexKey &k) const noexcept {
-    // A simple mix for 3 ints.
-    std::size_t h1 = std::hash<int>{}(k.v);
-    std::size_t h2 = std::hash<int>{}(k.vt);
-    std::size_t h3 = std::hash<int>{}(k.vn);
-    std::size_t h = h1;
-    h ^= h2 + 0x9e3779b97f4a7c15ULL + (h << 6) + (h >> 2);
-    h ^= h3 + 0x9e3779b97f4a7c15ULL + (h << 6) + (h >> 2);
-    return h;
-  }
+    std::size_t operator()(const VertexKey &k) const noexcept {
+        // A simple mix for 3 ints.
+        std::size_t h1 = std::hash<int>{}(k.v);
+        std::size_t h2 = std::hash<int>{}(k.vt);
+        std::size_t h3 = std::hash<int>{}(k.vn);
+        std::size_t h = h1;
+        h ^= h2 + 0x9e3779b97f4a7c15ULL + (h << 6) + (h >> 2);
+        h ^= h3 + 0x9e3779b97f4a7c15ULL + (h << 6) + (h >> 2);
+        return h;
+    }
 };
 
 } // namespace detail
@@ -127,216 +128,227 @@ struct VertexKeyHasher {
 // - location 2: color (vec3) if color is provided
 // - location 3: texcoord (vec2) if any vt exists
 // NOTE: Requires a valid OpenGL context to be current when called.
-inline std::optional<Mesh> load_obj(const std::string &path,
-                   std::optional<glm::vec3> color = std::nullopt) {
-  std::ifstream file(path);
-  if (!file.is_open()) {
-    return std::nullopt;
-  }
-
-  std::vector<std::string> lines;
-  lines.reserve(4096);
-  {
-    std::string line;
-    while (std::getline(file, line)) {
-      lines.push_back(std::move(line));
-    }
-  }
-
-  struct Vec2 {
-    float x = 0.f;
-    float y = 0.f;
-  };
-  struct Vec3 {
-    float x = 0.f;
-    float y = 0.f;
-    float z = 0.f;
-  };
-
-  std::vector<Vec3> positions;
-  positions.reserve(1024);
-
-  // vt/vn are optional.
-  std::vector<Vec2> texcoords;
-  std::vector<Vec3> normals;
-  texcoords.reserve(1024);
-  normals.reserve(1024);
-
-  const bool hasColors = color.has_value();
-  bool hasTexcoords = false;
-  bool hasNormals = false;
-  for (const auto &raw : lines) {
-    std::string_view sv(raw);
-    sv = detail::ltrim(sv);
-    if (sv.empty() || sv.front() == '#') {
-      continue;
-    }
-    if (detail::startsWith(sv, "vt ")) {
-      hasTexcoords = true;
-    }
-    if (detail::startsWith(sv, "vn ")) {
-      hasNormals = true;
-    }
-  }
-
-  const int strideFloats = 3 + (hasNormals ? 3 : 0) + (hasColors ? 3 : 0) +
-             (hasTexcoords ? 2 : 0);
-
-  // packed: position, normal?, color?, texCoord?
-  std::vector<float> vertices;
-  vertices.reserve(4096 * strideFloats);
-  std::vector<unsigned int> indices;        // triangles
-  std::unordered_map<detail::VertexKey, unsigned int, detail::VertexKeyHasher> vertexMap;
-  vertexMap.reserve(2048);
-
-  for (const auto &raw : lines) {
-    std::string_view sv(raw);
-    sv = detail::ltrim(sv);
-    if (sv.empty() || sv.front() == '#') {
-      continue;
+inline std::optional<Mesh>
+load_obj(const std::string &path,
+         std::optional<glm::vec3> color = std::nullopt) {
+    std::ifstream file(path);
+    if (!file.is_open()) {
+        return std::nullopt;
     }
 
-    if (detail::startsWith(sv, "v ")) {
-      // v x y z
-      sv.remove_prefix(2);
-      sv = detail::ltrim(sv);
-
-      float x = 0.f, y = 0.f, z = 0.f;
-      std::istringstream iss{std::string(sv)};
-      iss >> x >> y >> z;
-      if (!iss.fail()) {
-        positions.push_back(Vec3{x, y, z});
-      }
-      continue;
+    std::vector<std::string> lines;
+    lines.reserve(4096);
+    {
+        std::string line;
+        while (std::getline(file, line)) {
+            lines.push_back(std::move(line));
+        }
     }
 
-    if (detail::startsWith(sv, "vt ")) {
-      // vt u v
-      sv.remove_prefix(3);
-      sv = detail::ltrim(sv);
-      float u = 0.f, v = 0.f;
-      std::istringstream iss{std::string(sv)};
-      iss >> u >> v;
-      if (!iss.fail()) {
-        texcoords.push_back(Vec2{u, v});
-      }
-      continue;
+    struct Vec2 {
+        float x = 0.f;
+        float y = 0.f;
+    };
+    struct Vec3 {
+        float x = 0.f;
+        float y = 0.f;
+        float z = 0.f;
+    };
+
+    std::vector<Vec3> positions;
+    positions.reserve(1024);
+
+    // vt/vn are optional.
+    std::vector<Vec2> texcoords;
+    std::vector<Vec3> normals;
+    texcoords.reserve(1024);
+    normals.reserve(1024);
+
+    const bool hasColors = color.has_value();
+    bool hasTexcoords = false;
+    bool hasNormals = false;
+    for (const auto &raw : lines) {
+        std::string_view sv(raw);
+        sv = detail::ltrim(sv);
+        if (sv.empty() || sv.front() == '#') {
+            continue;
+        }
+        if (detail::startsWith(sv, "vt ")) {
+            hasTexcoords = true;
+        }
+        if (detail::startsWith(sv, "vn ")) {
+            hasNormals = true;
+        }
     }
 
-    if (detail::startsWith(sv, "vn ")) {
-      // vn x y z
-      sv.remove_prefix(3);
-      sv = detail::ltrim(sv);
-      float x = 0.f, y = 0.f, z = 0.f;
-      std::istringstream iss{std::string(sv)};
-      iss >> x >> y >> z;
-      if (!iss.fail()) {
-        normals.push_back(Vec3{x, y, z});
-      }
-      continue;
-    }
+    const int strideFloats =
+        3 + (hasNormals ? 3 : 0) + (hasColors ? 3 : 0) + (hasTexcoords ? 2 : 0);
 
-    if (detail::startsWith(sv, "f ")) {
-      // f a b c [d ...]
-      sv.remove_prefix(2);
-      sv = detail::ltrim(sv);
+    // packed: position, normal?, color?, texCoord?
+    std::vector<float> vertices;
+    vertices.reserve(4096 * strideFloats);
+    std::vector<unsigned int> indices; // triangles
+    std::unordered_map<detail::VertexKey, unsigned int, detail::VertexKeyHasher>
+        vertexMap;
+    vertexMap.reserve(2048);
 
-      std::vector<detail::FaceVertexIndex> face;
-      face.reserve(8);
-
-      std::istringstream iss{std::string(sv)};
-      std::string tok;
-      while (iss >> tok) {
-        face.push_back(detail::parseFaceVertex(tok));
-      }
-      if (face.size() < 3) {
-        continue;
-      }
-
-      auto emitVertexIndex = [&](const detail::FaceVertexIndex &fvi) -> unsigned int {
-        const int posIndex = detail::resolveObjIndex(fvi.v, positions.size());
-        if (posIndex < 0 || static_cast<std::size_t>(posIndex) >= positions.size()) {
-          return 0;
+    for (const auto &raw : lines) {
+        std::string_view sv(raw);
+        sv = detail::ltrim(sv);
+        if (sv.empty() || sv.front() == '#') {
+            continue;
         }
 
-        int vtIndex = -1;
-        int vnIndex = -1;
-        if (hasTexcoords && fvi.vt != 0) {
-          vtIndex = detail::resolveObjIndex(fvi.vt, texcoords.size());
-        }
-        if (hasNormals && fvi.vn != 0) {
-          vnIndex = detail::resolveObjIndex(fvi.vn, normals.size());
-        }
+        if (detail::startsWith(sv, "v ")) {
+            // v x y z
+            sv.remove_prefix(2);
+            sv = detail::ltrim(sv);
 
-        detail::VertexKey key{posIndex, vtIndex, vnIndex};
-        auto it = vertexMap.find(key);
-        if (it != vertexMap.end()) {
-          return it->second;
-        }
-
-        const Vec3 &p = positions[static_cast<std::size_t>(posIndex)];
-        const unsigned int newIndex = static_cast<unsigned int>(vertices.size() / strideFloats);
-
-        vertices.push_back(p.x);
-        vertices.push_back(p.y);
-        vertices.push_back(p.z);
-
-        if (hasNormals) {
-          if (vnIndex >= 0 && static_cast<std::size_t>(vnIndex) < normals.size()) {
-            const Vec3 &n = normals[static_cast<std::size_t>(vnIndex)];
-            vertices.push_back(n.x);
-            vertices.push_back(n.y);
-            vertices.push_back(n.z);
-          } else {
-            vertices.push_back(0.f);
-            vertices.push_back(0.f);
-            vertices.push_back(0.f);
-          }
+            float x = 0.f, y = 0.f, z = 0.f;
+            std::istringstream iss{std::string(sv)};
+            iss >> x >> y >> z;
+            if (!iss.fail()) {
+                positions.push_back(Vec3{x, y, z});
+            }
+            continue;
         }
 
-        if (hasColors) {
-          const glm::vec3 c = *color;
-          vertices.push_back(c.r);
-          vertices.push_back(c.g);
-          vertices.push_back(c.b);
+        if (detail::startsWith(sv, "vt ")) {
+            // vt u v
+            sv.remove_prefix(3);
+            sv = detail::ltrim(sv);
+            float u = 0.f, v = 0.f;
+            std::istringstream iss{std::string(sv)};
+            iss >> u >> v;
+            if (!iss.fail()) {
+                texcoords.push_back(Vec2{u, v});
+            }
+            continue;
         }
 
-        if (hasTexcoords) {
-          if (vtIndex >= 0 && static_cast<std::size_t>(vtIndex) < texcoords.size()) {
-            const Vec2 &t = texcoords[static_cast<std::size_t>(vtIndex)];
-            vertices.push_back(t.x);
-            vertices.push_back(t.y);
-          } else {
-            vertices.push_back(0.f);
-            vertices.push_back(0.f);
-          }
+        if (detail::startsWith(sv, "vn ")) {
+            // vn x y z
+            sv.remove_prefix(3);
+            sv = detail::ltrim(sv);
+            float x = 0.f, y = 0.f, z = 0.f;
+            std::istringstream iss{std::string(sv)};
+            iss >> x >> y >> z;
+            if (!iss.fail()) {
+                normals.push_back(Vec3{x, y, z});
+            }
+            continue;
         }
 
-        vertexMap.emplace(key, newIndex);
-        return newIndex;
-      };
+        if (detail::startsWith(sv, "f ")) {
+            // f a b c [d ...]
+            sv.remove_prefix(2);
+            sv = detail::ltrim(sv);
 
-      // Triangulate polygon via fan
-      const unsigned int i0 = emitVertexIndex(face[0]);
-      for (std::size_t i = 1; i + 1 < face.size(); ++i) {
-        const unsigned int i1 = emitVertexIndex(face[i]);
-        const unsigned int i2 = emitVertexIndex(face[i + 1]);
-        indices.push_back(i0);
-        indices.push_back(i1);
-        indices.push_back(i2);
-      }
-      continue;
+            std::vector<detail::FaceVertexIndex> face;
+            face.reserve(8);
+
+            std::istringstream iss{std::string(sv)};
+            std::string tok;
+            while (iss >> tok) {
+                face.push_back(detail::parseFaceVertex(tok));
+            }
+            if (face.size() < 3) {
+                continue;
+            }
+
+            auto emitVertexIndex =
+                [&](const detail::FaceVertexIndex &fvi) -> unsigned int {
+                const int posIndex =
+                    detail::resolveObjIndex(fvi.v, positions.size());
+                if (posIndex < 0 ||
+                    static_cast<std::size_t>(posIndex) >= positions.size()) {
+                    return 0;
+                }
+
+                int vtIndex = -1;
+                int vnIndex = -1;
+                if (hasTexcoords && fvi.vt != 0) {
+                    vtIndex = detail::resolveObjIndex(fvi.vt, texcoords.size());
+                }
+                if (hasNormals && fvi.vn != 0) {
+                    vnIndex = detail::resolveObjIndex(fvi.vn, normals.size());
+                }
+
+                detail::VertexKey key{posIndex, vtIndex, vnIndex};
+                auto it = vertexMap.find(key);
+                if (it != vertexMap.end()) {
+                    return it->second;
+                }
+
+                const Vec3 &p = positions[static_cast<std::size_t>(posIndex)];
+                const unsigned int newIndex =
+                    static_cast<unsigned int>(vertices.size() / strideFloats);
+
+                vertices.push_back(p.x);
+                vertices.push_back(p.y);
+                vertices.push_back(p.z);
+
+                if (hasNormals) {
+                    if (vnIndex >= 0 &&
+                        static_cast<std::size_t>(vnIndex) < normals.size()) {
+                        const Vec3 &n =
+                            normals[static_cast<std::size_t>(vnIndex)];
+                        vertices.push_back(n.x);
+                        vertices.push_back(n.y);
+                        vertices.push_back(n.z);
+                    } else {
+                        vertices.push_back(0.f);
+                        vertices.push_back(0.f);
+                        vertices.push_back(0.f);
+                    }
+                }
+
+                if (hasColors) {
+                    const glm::vec3 c = *color;
+                    vertices.push_back(c.r);
+                    vertices.push_back(c.g);
+                    vertices.push_back(c.b);
+                }
+
+                if (hasTexcoords) {
+                    if (vtIndex >= 0 &&
+                        static_cast<std::size_t>(vtIndex) < texcoords.size()) {
+                        const Vec2 &t =
+                            texcoords[static_cast<std::size_t>(vtIndex)];
+                        vertices.push_back(t.x);
+                        vertices.push_back(t.y);
+                    } else {
+                        vertices.push_back(0.f);
+                        vertices.push_back(0.f);
+                    }
+                }
+
+                vertexMap.emplace(key, newIndex);
+                return newIndex;
+            };
+
+            // Triangulate polygon via fan
+            const unsigned int i0 = emitVertexIndex(face[0]);
+            for (std::size_t i = 1; i + 1 < face.size(); ++i) {
+                const unsigned int i1 = emitVertexIndex(face[i]);
+                const unsigned int i2 = emitVertexIndex(face[i + 1]);
+                indices.push_back(i0);
+                indices.push_back(i1);
+                indices.push_back(i2);
+            }
+            continue;
+        }
     }
-  }
 
-  if (vertices.empty() || indices.empty()) {
-    return std::nullopt;
-  }
+    if (vertices.empty() || indices.empty()) {
+        return std::nullopt;
+    }
 
-  Mesh mesh{};
-  mesh.indexCount = static_cast<unsigned int>(indices.size());
-  Mesh::setupBuffers(vertices, indices, mesh, hasNormals, hasColors, hasTexcoords);
-  return mesh;
+    Mesh mesh{};
+    mesh.indexCount = static_cast<unsigned int>(indices.size());
+    Mesh::setupBuffers(vertices, indices, mesh, hasNormals, hasColors,
+                       hasTexcoords);
+    return mesh;
 }
 
 } // namespace mesh_loader
