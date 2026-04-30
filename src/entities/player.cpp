@@ -11,7 +11,8 @@
 void Player::update(float deltaTime) {
     // For demonstration, let's just rotate the player over time
     float angle = 20.0f * deltaTime; // Rotate 20 degrees per second
-    transform.rotate(angle, glm::vec3(0.f, 1.f, 0.f));
+    transform.rotateInRespectTo(glm::vec3(0.f, 0.f, 0.f), angle,
+                                glm::vec3(0.f, 1.f, 0.f));
 }
 
 void Player::draw(Shader &shader) const {

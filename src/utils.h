@@ -15,6 +15,12 @@ class Transform {
     void rotate(float angleDegrees, const glm::vec3 &axis) {
         mat = glm::rotate(mat, glm::radians(angleDegrees), axis);
     }
+    void rotateInRespectTo(const glm::vec3 &point, float angleDegrees,
+                           const glm::vec3 &axis) {
+        mat = glm::translate(glm::mat4(1.0f), point) *
+              glm::rotate(glm::mat4(1.0f), glm::radians(angleDegrees), axis) *
+              glm::translate(glm::mat4(1.0f), -point) * mat;
+    }
 
     void setPosition(const glm::vec3 &position) {
         // Extract current scale and rotation
