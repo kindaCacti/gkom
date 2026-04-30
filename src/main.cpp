@@ -50,8 +50,8 @@ int main() {
 
     // build and compile our shader program
     // ------------------------------------
-    Shader ourShader("../shaders/shader.vs",
-                     "../shaders/shader.fs"); // you can name your shader files
+    Shader ourShader("../shaders/blinn-phong.vs",
+                     "../shaders/blinn-phong.fs");
                                               // however you like
 
     // set up vertex data (and buffer(s)) and configure vertex attributes
@@ -88,8 +88,7 @@ int main() {
     auto meshOpt = mesh_loader::load_obj("../assets/teapot.obj", glm::vec3(0.8f, 0.5f, 0.2f));
     sf.registerMesh(meshOpt.value(), "teapot");
     auto teapot = sf.createShape("teapot");
-    teapot->translate(glm::vec3(0.f, -0.5f, 0.f));
-    teapot->scale(glm::vec3(0.5f));
+    teapot->scale(glm::vec3(0.07f));
     Player p(std::move(teapot));
     
     // Player p(sf.createCube(glm::vec3(0.f, 0.f, 0.f)));
@@ -110,6 +109,15 @@ int main() {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         ourShader.use();
+
+        // Blinn-Phong uniforms
+        ourShader.setVec3("lightPos", glm::vec3(2.0f, 2.0f, 2.0f));
+        ourShader.setVec3("viewPos", glm::vec3(0.0f, 0.0f, 3.0f));
+        ourShader.setVec3("lightColor", glm::vec3(1.0f));
+        ourShader.setVec3("baseColor", glm::vec3(0.8f, 0.5f, 0.2f));
+        ourShader.setFloat("ambientStrength", 0.15f);
+        ourShader.setFloat("specularStrength", 0.5f);
+        ourShader.setFloat("shininess", 64.0f);
 
         glm::mat4 view = glm::mat4(1.0f);
         glm::mat4 projection = glm::mat4(1.0f);
