@@ -6,6 +6,7 @@
 #include <iostream>
 
 #include "shader_s.h"
+#include "mesh/mesh_loader.h"
 #include "shapes/shape_factory.h"
 #include "entities/player.h"
 
@@ -84,7 +85,14 @@ int main() {
     // glEnableVertexAttribArray(1);
 
     ShapeFactory sf;
-    Player p(sf.createCube(glm::vec3(0.f, 0.f, 0.f)));
+    auto meshOpt = mesh_loader::load_obj("../assets/teapot.obj", glm::vec3(0.8f, 0.5f, 0.2f));
+    sf.registerMesh(meshOpt.value(), "teapot");
+    auto teapot = sf.createShape("teapot");
+    teapot->translate(glm::vec3(0.f, -0.5f, 0.f));
+    teapot->scale(glm::vec3(0.5f));
+    Player p(std::move(teapot));
+    
+    // Player p(sf.createCube(glm::vec3(0.f, 0.f, 0.f)));
 
     // You can unbind the VAO afterwards so other VAO calls won't
     // accidentally modify this VAO, but this rarely happens. Modifying

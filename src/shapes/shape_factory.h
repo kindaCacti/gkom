@@ -16,29 +16,6 @@ class ShapeFactory {
     // This stores the actual GPU data so it stays in memory
     std::map<std::string, Mesh> _meshCache;
 
-    void _setupBuffers(float *vertices, unsigned int vertices_size,
-                       unsigned int *indexes, Mesh &mesh) {
-        glGenVertexArrays(1, &mesh.VAO);
-        glGenBuffers(1, &mesh.VBO);
-        glGenBuffers(1, &mesh.EBO);
-
-        glBindVertexArray(mesh.VAO);
-
-        glBindBuffer(GL_ARRAY_BUFFER, mesh.VBO);
-        glBufferData(GL_ARRAY_BUFFER, vertices_size, vertices, GL_STATIC_DRAW);
-
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh.EBO);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER,
-                     sizeof(unsigned int) * mesh.indexCount, indexes,
-                     GL_STATIC_DRAW);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float),
-                              (void *)0);
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float),
-                              (void *)(3 * sizeof(float)));
-        glEnableVertexAttribArray(1);
-    }
-
     void _loadCubeMesh() {
         Mesh cube;
         float vertices[] = {
@@ -63,7 +40,9 @@ class ShapeFactory {
         };
         cube.indexCount = 36;
 
-        _setupBuffers(vertices, sizeof(float) * 6 * 8, indices, cube);
+        Mesh::setupBuffers(std::vector<float>(vertices, vertices + 6 * 8),
+                           std::vector<unsigned int>(indices, indices + 36),
+                           cube, false, true, false);
 
         _meshCache["cube"] = cube;
     }
@@ -71,6 +50,19 @@ class ShapeFactory {
   public:
     ShapeFactory() {
         _loadCubeMesh(); // Pre-load common shapes
+    }
+
+    void registerMesh(const Mesh &mesh, const std::string &name) {
+        _meshCache[name] = mesh;
+    }
+
+    std::unique_ptr<Shape> createShape(const std::string &name) {
+        auto it = _meshCache.find(name);
+        if (it != _meshCache.end()) {
+            auto newShape = std::make_unique<Shape>(&it->second);
+            return newShape;
+        }
+        return nullptr;
     }
 
     std::unique_ptr<Shape> createCube(glm::vec3 position) {
