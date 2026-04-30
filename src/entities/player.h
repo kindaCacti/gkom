@@ -7,7 +7,7 @@
 #include "../shaders/shader_s.h"
 #include "entity.h"
 #include "../mesh/mesh.h"
-#include "../shader_s.h"
+#include "../shaders/shader_s.h"
 #include "../shapes/shape.h"
 #include "../shapes/shape_factory.h"
 #include "entity.h"
@@ -22,7 +22,8 @@ class Player : public DrawableEntity {
         : DrawableEntity(), _shape(std::move(shape)) {}
 
     void draw(Shader &shader) const override;
-    void update(float deltaTime);
+
+    glm::mat4 getTransformMatrix() const;
 };
 
 #endif

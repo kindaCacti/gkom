@@ -13,7 +13,7 @@
 #include "shaders/utils.h"
 #include "shaders/blinn_phong.h"
 #include "mesh/mesh_loader.h"
-#include "shader_s.h"
+#include "./shaders/shader_s.h"
 #include "shapes/shape_factory.h"
 #include "entities/player.h"
 #include "defines.h"
@@ -107,92 +107,62 @@ int main() {
     ourShader.setFloat("specularStrength", 0.5f);
     ourShader.setFloat("shininess", 64.0f);
 
-    // set up vertex data (and buffer(s)) and configure vertex attributes
-    // ------------------------------------------------------------------
-    // float vertices[] = {
-    //     // positions         // colors
-    //     0.5f,  -0.5f, 0.0f, 1.0f, 0.0f, 0.0f, // bottom right
-    //     -0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, // bottom left
-    //     0.0f,  0.5f,  0.0f, 0.0f, 0.0f, 1.0f  // top
-    // };
+    {
+        ShapeFactory sf;
+        sf.registerMesh("../assets/teapot.obj", "teapot",
+                        glm::vec3(0.8f, 0.5f, 0.2f));
+        auto teapot = sf.createShape("teapot");
+        teapot->transform.scale(glm::vec3(0.4f));
+        teapot->transform.translate(glm::vec3(0.f, -1.5f, 0.f));
+        Player p(std::move(teapot));
+        p.set_position(2.f, 0.f, 0.f);
 
-    // unsigned int VBO, VAO;
-    // glGenVertexArrays(1, &VAO);
-    // glGenBuffers(1, &VBO);
-    // // bind the Vertex Array Object first, then bind and set vertex
-    // buffer(s),
-    // // and then configure vertex attributes(s).
-    // glBindVertexArray(VAO);
+        Camera cam;
+        cam.setAspectRatio(static_cast<float>(SCR_WIDTH) /
+                           static_cast<float>(SCR_HEIGHT));
+        cam.setPosition(glm::vec3(0.f, 3.f, 5.f));
+        // cam.setTarget(p.transform.getPosition());
 
-    // glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    // glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices,
-    // GL_STATIC_DRAW);
+        // Player p(sf.createCube(glm::vec3(0.f, 0.f, 0.f)));
 
-    // // position attribute
-    // glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float),
-    //                       (void *)0);
-    // glEnableVertexAttribArray(0);
-    // // color attribute
-    // glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float),
-    //                       (void *)(3 * sizeof(float)));
-    // glEnableVertexAttribArray(1);
+        // You can unbind the VAO afterwards so other VAO calls won't
+        // accidentally modify this VAO, but this rarely happens. Modifying
+        // other VAOs requires a call to glBindVertexArray anyways so we
+        // generally don't unbind VAOs (nor VBOs) when it's not directly
+        // necessary. glBindVertexArray(0);
 
-    ShapeFactory sf;
-    sf.registerMesh("../assets/teapot.obj", "teapot",
-                    glm::vec3(0.8f, 0.5f, 0.2f));
-    auto teapot = sf.createShape("teapot");
-    teapot->transform.scale(glm::vec3(0.4f));
-    teapot->transform.translate(glm::vec3(0.f, -1.5f, 0.f));
-    Player p(std::move(teapot));
-    p.transform.translate(glm::vec3(2.f, 0.f, 0.f));
+        // render loop
+        // -----------
+        glEnable(GL_DEPTH_TEST);
+        glDisable(GL_CULL_FACE);
+        float lastFrameTime = 0.0f;
+        while (!glfwWindowShouldClose(window)) {
+            float currentFrameTime = static_cast<float>(glfwGetTime());
+            float deltaTime = currentFrameTime - lastFrameTime;
+            lastFrameTime = currentFrameTime;
+            processInput(window, p);
+            glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    Camera cam;
-    cam.setAspectRatio(static_cast<float>(SCR_WIDTH) /
-                       static_cast<float>(SCR_HEIGHT));
-    cam.setPosition(glm::vec3(0.f, 3.f, 5.f));
-    // cam.setTarget(p.transform.getPosition());
+            ourShader.use();
+            ourShader.setVec3("viewPos", cam.getPosition());
 
-    // Player p(sf.createCube(glm::vec3(0.f, 0.f, 0.f)));
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, tex0);
 
-    // You can unbind the VAO afterwards so other VAO calls won't
-    // accidentally modify this VAO, but this rarely happens. Modifying
-    // other VAOs requires a call to glBindVertexArray anyways so we
-    // generally don't unbind VAOs (nor VBOs) when it's not directly
-    // necessary. glBindVertexArray(0);
+            cam.setTarget(p.get_pos());
+            ourShader.setMat4("camera", cam.getMatrix());
+            p.draw(ourShader);
 
-    // render loop
-    // -----------
-    glEnable(GL_DEPTH_TEST);
-    glDisable(GL_CULL_FACE);
-    float lastFrameTime = 0.0f;
-    while (!glfwWindowShouldClose(window)) {
-        float currentFrameTime = static_cast<float>(glfwGetTime());
-        float deltaTime = currentFrameTime - lastFrameTime;
-        lastFrameTime = currentFrameTime;
-        processInput(window);
-        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            glfwSwapBuffers(window);
+            glfwPollEvents();
+        }
 
-        ourShader.use();
-        ourShader.setVec3("viewPos", cam.getPosition());
-
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, tex0);
-
-        p.update(deltaTime);
-        cam.setTarget(p.transform.getPosition());
-        ourShader.setMat4("camera", cam.getMatrix());
-        p.draw(ourShader);
-
-        glfwSwapBuffers(window);
-        glfwPollEvents();
+        glDeleteTextures(1, &tex0);
     }
 
-    glDeleteTextures(1, &tex0);
-}
-
-glfwTerminate();
-return 0;
+    glfwTerminate();
+    return 0;
 }
 
 // process all input: query GLFW whether relevant keys are pressed/released this

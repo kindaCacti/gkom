@@ -3,6 +3,7 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/quaternion.hpp>
 
 class Transform {
     glm::mat4 mat;
@@ -99,5 +100,10 @@ class Transform {
 
     const glm::mat4 &getMatrix() const { return mat; }
 };
+
+inline glm::mat4 getEulerRotationMatrix(const glm::vec3 &eulerDegrees) {
+    glm::quat q = glm::quat(glm::radians(eulerDegrees));
+    return glm::mat4_cast(q);
+}
 
 #endif

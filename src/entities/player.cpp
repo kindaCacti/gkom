@@ -6,16 +6,16 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-#include "player.h"
+#include "./player.h"
+#include "../utils.h"
 
-void Player::_set_shape_translation() const {
-    _shape->reset_transform();
-    _shape->translate(_pos);
-    _shape->rotate(_rot);
-    _shape->scale(_scale);
+glm::mat4 Player::getTransformMatrix() const {
+    glm::mat4 T = glm::translate(glm::mat4(1.0f), _pos);
+    glm::mat4 R = getEulerRotationMatrix(_rot);
+    glm::mat4 S = glm::scale(glm::mat4(1.0f), _scale);
+    return T * R * S;
 }
 
 void Player::draw(Shader &shader) const {
-    _set_shape_translation();
-    _shape->draw(shader.ID);
+    _shape->draw(shader.ID, getTransformMatrix());
 }
