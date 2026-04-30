@@ -88,7 +88,8 @@ int main() {
     auto meshOpt = mesh_loader::load_obj("../assets/teapot.obj", glm::vec3(0.8f, 0.5f, 0.2f));
     sf.registerMesh(meshOpt.value(), "teapot");
     auto teapot = sf.createShape("teapot");
-    teapot->scale(glm::vec3(0.07f));
+    teapot->scale(glm::vec3(0.4f));
+    teapot->translate(glm::vec3(0.f, -1.5f, 0.f));
     Player p(std::move(teapot));
     
     // Player p(sf.createCube(glm::vec3(0.f, 0.f, 0.f)));
@@ -125,6 +126,8 @@ int main() {
                                       (float)SCR_WIDTH / (float)SCR_HEIGHT,
                                       0.1f, 100.0f);
         view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
+        view = glm::rotate(view, glm::radians(30.0f),
+                           glm::vec3(1.0f, 0.0f, 0.0f));
         ourShader.setMat4("projection", projection);
         ourShader.setMat4("view", view);
         p.draw(ourShader);
