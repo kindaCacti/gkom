@@ -1,7 +1,8 @@
 #ifndef ENTITY_H
 #define ENTITY_H
 
-#include <glm/glm.hpp>
+#include "../shader_s.h"
+#include "../utils.h"
 
 class Entity {
   protected:
@@ -13,12 +14,12 @@ class Entity {
     Entity()
         : _pos(0.f, 0.f, 0.f), _rot(0.f, 0.f, 0.f), _scale(1.f, 1.f, 1.f) {}
 
-    virtual void move(const float dx = 0.f, const float dy = 0.f,
-                      const float dz = 0.f) {
-        _pos.x += dx;
-        _pos.y += dy;
-        _pos.z += dz;
-    }
+    // virtual void move(const float dx = 0.f, const float dy = 0.f,
+    //                   const float dz = 0.f) {
+    //     _pos.x += dx;
+    //     _pos.y += dy;
+    //     _pos.z += dz;
+    // }
 
     virtual void move_to(const float x = 0.f, const float y = 0.f,
                          const float z = 0.f) {

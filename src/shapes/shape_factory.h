@@ -9,6 +9,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "../mesh/mesh.h"
+#include "../mesh/mesh_loader.h"
 #include "shape.h"
 
 class ShapeFactory {
@@ -56,6 +57,14 @@ class ShapeFactory {
         _meshCache[name] = mesh;
     }
 
+    void registerMesh(const std::string &path, const std::string &name,
+                      std::optional<glm::vec3> color = std::nullopt) {
+        auto meshOpt = mesh_loader::load_obj(path, color);
+        if (meshOpt.has_value()) {
+            _meshCache[name] = meshOpt.value();
+        }
+    }
+
     std::unique_ptr<Shape> createShape(const std::string &name) {
         auto it = _meshCache.find(name);
         if (it != _meshCache.end()) {
@@ -69,7 +78,7 @@ class ShapeFactory {
         auto it = _meshCache.find("cube");
         if (it != _meshCache.end()) {
             auto newShape = std::make_unique<Shape>(&it->second);
-            newShape->transform = glm::translate(glm::mat4(1.0f), position);
+            newShape->transform.translate(position);
             return newShape;
         }
         return nullptr;

@@ -1,4 +1,5 @@
 #include <glad/glad.h>
+
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -7,9 +8,12 @@
 #include <random>
 #include <vector>
 
+#include "camera.h"
+#include "entities/player.h"
 #include "shaders/utils.h"
 #include "shaders/blinn_phong.h"
 #include "mesh/mesh_loader.h"
+#include "shader_s.h"
 #include "shapes/shape_factory.h"
 #include "entities/player.h"
 #include "defines.h"
@@ -94,63 +98,98 @@ int main() {
     // Link texture unit 0 to the generic texture sampler.
     ourShader.use();
     ourShader.setInt("tex", 0);
+    // Blinn-Phong uniforms
+    ourShader.setVec3("lightPos", glm::vec3(2.0f, 2.0f, 2.0f));
+    ourShader.setVec3("viewPos", glm::vec3(0.0f, 3.0f, 5.0f));
+    ourShader.setVec3("lightColor", glm::vec3(1.0f));
+    ourShader.setVec3("baseColor", glm::vec3(0.8f, 0.5f, 0.2f));
+    ourShader.setFloat("ambientStrength", 0.15f);
+    ourShader.setFloat("specularStrength", 0.5f);
+    ourShader.setFloat("shininess", 64.0f);
 
-    {
-        ShapeFactory sf;
-        auto meshOpt = mesh_loader::load_obj("../assets/teapot.obj",
-                                             glm::vec3(0.8f, 0.5f, 0.2f));
-        sf.registerMesh(meshOpt.value(), "teapot");
-        auto teapot = sf.createShape("teapot");
-        teapot->scale(glm::vec3(0.4f));
-        teapot->translate(glm::vec3(0.f, -1.5f, 0.f));
-        Player p(std::move(teapot));
-        Player p2(sf.createCube(glm::vec3(0.f, -100.f, 0.f)));
-        p2.set_scale(glm::vec3(100.0f, 1.0f, 100.0f));
-        p2.set_position(glm::vec3(0.0f, -2.0f, 0.0f));
-        BlinnPhongParameters bpp;
+    // set up vertex data (and buffer(s)) and configure vertex attributes
+    // ------------------------------------------------------------------
+    // float vertices[] = {
+    //     // positions         // colors
+    //     0.5f,  -0.5f, 0.0f, 1.0f, 0.0f, 0.0f, // bottom right
+    //     -0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, // bottom left
+    //     0.0f,  0.5f,  0.0f, 0.0f, 0.0f, 1.0f  // top
+    // };
 
-        // Player p(sf.createCube(glm::vec3(0.f, 0.f, 0.f)));
+    // unsigned int VBO, VAO;
+    // glGenVertexArrays(1, &VAO);
+    // glGenBuffers(1, &VBO);
+    // // bind the Vertex Array Object first, then bind and set vertex
+    // buffer(s),
+    // // and then configure vertex attributes(s).
+    // glBindVertexArray(VAO);
 
-        // You can unbind the VAO afterwards so other VAO calls won't
-        // accidentally modify this VAO, but this rarely happens. Modifying
-        // other VAOs requires a call to glBindVertexArray anyways so we
-        // generally don't unbind VAOs (nor VBOs) when it's not directly
-        // necessary. glBindVertexArray(0);
+    // glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    // glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices,
+    // GL_STATIC_DRAW);
 
-        // render loop
-        // -----------
-        glEnable(GL_DEPTH_TEST);
-        glDisable(GL_CULL_FACE);
-        while (!glfwWindowShouldClose(window)) {
-            processInput(window, p);
-            glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, tex0);
+    // // position attribute
+    // glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float),
+    //                       (void *)0);
+    // glEnableVertexAttribArray(0);
+    // // color attribute
+    // glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float),
+    //                       (void *)(3 * sizeof(float)));
+    // glEnableVertexAttribArray(1);
 
-            ourShader.use();
+    ShapeFactory sf;
+    sf.registerMesh("../assets/teapot.obj", "teapot",
+                    glm::vec3(0.8f, 0.5f, 0.2f));
+    auto teapot = sf.createShape("teapot");
+    teapot->transform.scale(glm::vec3(0.4f));
+    Player p(std::move(teapot));
+    p.transform.translate(glm::vec3(0.f, -1.5f, 0.f));
+    Camera cam;
+    cam.setAspectRatio(static_cast<float>(SCR_WIDTH) /
+                       static_cast<float>(SCR_HEIGHT));
+    cam.setPosition(glm::vec3(0.f, 3.f, 5.f));
+    cam.setTarget(glm::vec3(0.f, 0.f, 0.f));
 
-            bpp.projection = glm::perspective(
-                glm::radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f,
-                100.0f);
-            bpp.view = glm::lookAt(glm::vec3(0.0f, 10.0f, -10.0f), p.get_pos(),
-                                   glm::vec3(0, 1, 0));
-            shader_utils::load_blinn_phong_uniforms(ourShader, bpp);
-            float rot = static_cast<float>(glfwGetTime());
+    // Player p(sf.createCube(glm::vec3(0.f, 0.f, 0.f)));
 
-            p.set_rotation(0.0f, rot);
-            p.draw(ourShader);
-            p2.draw(ourShader);
+    // You can unbind the VAO afterwards so other VAO calls won't
+    // accidentally modify this VAO, but this rarely happens. Modifying
+    // other VAOs requires a call to glBindVertexArray anyways so we
+    // generally don't unbind VAOs (nor VBOs) when it's not directly
+    // necessary. glBindVertexArray(0);
 
-            glfwSwapBuffers(window);
-            glfwPollEvents();
-        }
+    // render loop
+    // -----------
+    glEnable(GL_DEPTH_TEST);
+    glDisable(GL_CULL_FACE);
+    float lastFrameTime = 0.0f;
+    while (!glfwWindowShouldClose(window)) {
+        float currentFrameTime = static_cast<float>(glfwGetTime());
+        float deltaTime = currentFrameTime - lastFrameTime;
+        lastFrameTime = currentFrameTime;
+        processInput(window);
+        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        glDeleteTextures(1, &tex0);
+        ourShader.use();
+        ourShader.setVec3("viewPos", cam.getPosition());
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, tex0);
+
+        p.update(deltaTime);
+        ourShader.setMat4("camera", cam.getMatrix());
+        p.draw(ourShader);
+
+        glfwSwapBuffers(window);
+        glfwPollEvents();
     }
 
-    glfwTerminate();
-    return 0;
+    glDeleteTextures(1, &tex0);
+}
+
+glfwTerminate();
+return 0;
 }
 
 // process all input: query GLFW whether relevant keys are pressed/released this
