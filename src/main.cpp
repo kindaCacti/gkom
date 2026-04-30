@@ -1,4 +1,5 @@
 #include <glad/glad.h>
+
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -7,10 +8,11 @@
 #include <random>
 #include <vector>
 
-#include "shader_s.h"
-#include "mesh/mesh_loader.h"
-#include "shapes/shape_factory.h"
+#include "camera.h"
 #include "entities/player.h"
+#include "mesh/mesh_loader.h"
+#include "shader_s.h"
+#include "shapes/shape_factory.h"
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height);
 void processInput(GLFWwindow *window);
@@ -21,7 +23,8 @@ const unsigned int SCR_HEIGHT = 600;
 
 static unsigned int createNoiseTexture2D(int width, int height) {
     std::vector<unsigned char> data;
-    data.resize(static_cast<std::size_t>(width) * static_cast<std::size_t>(height));
+    data.resize(static_cast<std::size_t>(width) *
+                static_cast<std::size_t>(height));
 
     std::mt19937 rng(1337u);
     std::uniform_int_distribution<int> dist(0, 255);
@@ -83,15 +86,22 @@ int main() {
 
     // build and compile our shader program
     // ------------------------------------
-    Shader ourShader("../shaders/blinn-phong.vs",
-                     "../shaders/blinn-phong.fs");
-                                              // however you like
+    Shader ourShader("../shaders/blinn-phong.vs", "../shaders/blinn-phong.fs");
+    // however you like
 
     unsigned int tex0 = createNoiseTexture2D(512, 512);
 
     // Link texture unit 0 to the generic texture sampler.
     ourShader.use();
     ourShader.setInt("tex", 0);
+    // Blinn-Phong uniforms
+    ourShader.setVec3("lightPos", glm::vec3(2.0f, 2.0f, 2.0f));
+    ourShader.setVec3("viewPos", glm::vec3(0.0f, 3.0f, 5.0f));
+    ourShader.setVec3("lightColor", glm::vec3(1.0f));
+    ourShader.setVec3("baseColor", glm::vec3(0.8f, 0.5f, 0.2f));
+    ourShader.setFloat("ambientStrength", 0.15f);
+    ourShader.setFloat("specularStrength", 0.5f);
+    ourShader.setFloat("shininess", 64.0f);
 
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
@@ -124,13 +134,18 @@ int main() {
     // glEnableVertexAttribArray(1);
 
     ShapeFactory sf;
-    auto meshOpt = mesh_loader::load_obj("../assets/teapot.obj", glm::vec3(0.8f, 0.5f, 0.2f));
-    sf.registerMesh(meshOpt.value(), "teapot");
+    sf.registerMesh("../assets/teapot.obj", "teapot",
+                    glm::vec3(0.8f, 0.5f, 0.2f));
     auto teapot = sf.createShape("teapot");
-    teapot->scale(glm::vec3(0.4f));
-    teapot->translate(glm::vec3(0.f, -1.5f, 0.f));
+    teapot->transform.scale(glm::vec3(0.4f));
     Player p(std::move(teapot));
-    
+    p.transform.translate(glm::vec3(0.f, -1.5f, 0.f));
+    Camera cam;
+    cam.setAspectRatio(static_cast<float>(SCR_WIDTH) /
+                       static_cast<float>(SCR_HEIGHT));
+    cam.setPosition(glm::vec3(0.f, 3.f, 5.f));
+    cam.setTarget(glm::vec3(0.f, 0.f, 0.f));
+
     // Player p(sf.createCube(glm::vec3(0.f, 0.f, 0.f)));
 
     // You can unbind the VAO afterwards so other VAO calls won't
@@ -143,35 +158,23 @@ int main() {
     // -----------
     glEnable(GL_DEPTH_TEST);
     glDisable(GL_CULL_FACE);
+    float lastFrameTime = 0.0f;
     while (!glfwWindowShouldClose(window)) {
+        float currentFrameTime = static_cast<float>(glfwGetTime());
+        float deltaTime = currentFrameTime - lastFrameTime;
+        lastFrameTime = currentFrameTime;
         processInput(window);
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         ourShader.use();
+        ourShader.setVec3("viewPos", cam.getPosition());
 
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, tex0);
 
-        // Blinn-Phong uniforms
-        ourShader.setVec3("lightPos", glm::vec3(2.0f, 2.0f, 2.0f));
-        ourShader.setVec3("viewPos", glm::vec3(0.0f, 0.0f, 3.0f));
-        ourShader.setVec3("lightColor", glm::vec3(1.0f));
-        ourShader.setVec3("baseColor", glm::vec3(0.8f, 0.5f, 0.2f));
-        ourShader.setFloat("ambientStrength", 0.15f);
-        ourShader.setFloat("specularStrength", 0.5f);
-        ourShader.setFloat("shininess", 64.0f);
-
-        glm::mat4 view = glm::mat4(1.0f);
-        glm::mat4 projection = glm::mat4(1.0f);
-        projection = glm::perspective(glm::radians(45.0f),
-                                      (float)SCR_WIDTH / (float)SCR_HEIGHT,
-                                      0.1f, 100.0f);
-        view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
-        view = glm::rotate(view, glm::radians(30.0f),
-                           glm::vec3(1.0f, 0.0f, 0.0f));
-        ourShader.setMat4("projection", projection);
-        ourShader.setMat4("view", view);
+        p.update(deltaTime);
+        ourShader.setMat4("camera", cam.getMatrix());
         p.draw(ourShader);
 
         glfwSwapBuffers(window);

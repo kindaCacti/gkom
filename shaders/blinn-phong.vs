@@ -13,8 +13,7 @@ out VS_OUT {
 } vs_out;
 
 uniform mat4 model;
-uniform mat4 view;
-uniform mat4 projection;
+uniform mat4 camera;
 
 void main() {
   vec4 worldPos = model * vec4(aPos, 1.0);
@@ -26,5 +25,5 @@ void main() {
   vs_out.Color = aColor;
   vs_out.TexCoord = aTexCoord;
 
-  gl_Position = projection * view * worldPos;
+  gl_Position = camera * worldPos;
 }

@@ -1,16 +1,19 @@
 #include <iostream>
 
 #include <glad/glad.h>
+
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "player.h"
 
+void Player::update(float deltaTime) {
+    // For demonstration, let's just rotate the player over time
+    float angle = 20.0f * deltaTime; // Rotate 20 degrees per second
+    transform.rotate(angle, glm::vec3(0.f, 1.f, 0.f));
+}
+
 void Player::draw(Shader &shader) const {
-    time_t time_v;
-    time(&time_v);
-    float angle = 20.0f * static_cast<float>(glfwGetTime());
-    _shape->setRotation(angle, glm::vec3(0.0f, 1.0f, 0.0f));
-    _shape->draw(shader.ID);
+    _shape->draw(shader.ID, transform.getMatrix());
 }
