@@ -20,6 +20,7 @@ add_executable(gkom
     includes/glad/src/glad.c
     src/shapes/shape.h
     src/entities/player.cpp
+    src/defines.h
 )
 
 add_library(glm INTERFACE)

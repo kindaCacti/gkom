@@ -5,11 +5,13 @@
 
 class Entity {
   protected:
-    glm::vec3 _pos;
-    glm::mat4 _transform;
+    glm::vec3 _pos;   // center point of an entity (in x y and z)
+    glm::vec3 _rot;   // rotation of an entity (int x y and z)
+    glm::vec3 _scale; // scale of an entity (in x y and z)
 
   public:
-    Entity() : _pos(0.f, 0.f, 0.f), _transform(1.0f) {}
+    Entity()
+        : _pos(0.f, 0.f, 0.f), _rot(0.f, 0.f, 0.f), _scale(1.f, 1.f, 1.f) {}
 
     virtual void move(const float dx = 0.f, const float dy = 0.f,
                       const float dz = 0.f) {
@@ -26,10 +28,11 @@ class Entity {
     }
 };
 
-class DrawableEntity {
+class DrawableEntity : public Entity {
   public:
-    virtual void draw(Shader &shader) const = 0;
+    DrawableEntity() : Entity() {}
 
+    virtual void draw(Shader &shader) const = 0;
     virtual ~DrawableEntity() = default;
 };
 

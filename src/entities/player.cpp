@@ -11,6 +11,10 @@ void Player::draw(Shader &shader) const {
     time_t time_v;
     time(&time_v);
     float angle = 20.0f * static_cast<float>(glfwGetTime());
-    _shape->setRotation(angle, glm::vec3(0.0f, 1.0f, 0.0f));
+    _shape->reset_transform();
+    _shape->translate(_pos);
+    _shape->rotate(_rot);
+    _shape->scale(_scale);
+    // _shape->setRotation(angle, glm::vec3(0.0f, 1.0f, 0.0f));
     _shape->draw(shader.ID);
 }
