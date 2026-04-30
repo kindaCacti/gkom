@@ -142,13 +142,15 @@ int main() {
                     glm::vec3(0.8f, 0.5f, 0.2f));
     auto teapot = sf.createShape("teapot");
     teapot->transform.scale(glm::vec3(0.4f));
+    teapot->transform.translate(glm::vec3(0.f, -1.5f, 0.f));
     Player p(std::move(teapot));
-    p.transform.translate(glm::vec3(0.f, -1.5f, 0.f));
+    p.transform.translate(glm::vec3(2.f, 0.f, 0.f));
+
     Camera cam;
     cam.setAspectRatio(static_cast<float>(SCR_WIDTH) /
                        static_cast<float>(SCR_HEIGHT));
     cam.setPosition(glm::vec3(0.f, 3.f, 5.f));
-    cam.setTarget(glm::vec3(0.f, 0.f, 0.f));
+    // cam.setTarget(p.transform.getPosition());
 
     // Player p(sf.createCube(glm::vec3(0.f, 0.f, 0.f)));
 
@@ -178,6 +180,7 @@ int main() {
         glBindTexture(GL_TEXTURE_2D, tex0);
 
         p.update(deltaTime);
+        cam.setTarget(p.transform.getPosition());
         ourShader.setMat4("camera", cam.getMatrix());
         p.draw(ourShader);
 
