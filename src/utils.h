@@ -4,6 +4,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
+#include <random>
 
 class Transform {
     glm::mat4 mat;
@@ -100,6 +101,38 @@ class Transform {
 
     const glm::mat4 &getMatrix() const { return mat; }
 };
+
+static unsigned int createNoiseTexture2D(int width, int height) {
+    std::vector<unsigned char> data;
+    data.resize(static_cast<std::size_t>(width) *
+                static_cast<std::size_t>(height));
+
+    std::mt19937 rng(1337u);
+    std::uniform_int_distribution<int> dist(0, 255);
+    for (auto &b : data) {
+        b = static_cast<unsigned char>(dist(rng));
+    }
+
+    unsigned int tex = 0;
+    glGenTextures(1, &tex);
+    glBindTexture(GL_TEXTURE_2D, tex);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, width, height, 0, GL_RED,
+                 GL_UNSIGNED_BYTE, data.data());
+
+    // Make sampling as vec3 work nicely if you ever use it.
+    GLint swizzleMask[] = {GL_RED, GL_RED, GL_RED, GL_ONE};
+    glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleMask);
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+    return tex;
+}
 
 inline glm::mat4 getEulerRotationMatrix(const glm::vec3 &eulerDegrees) {
     glm::quat q = glm::quat(glm::radians(eulerDegrees));

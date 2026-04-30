@@ -5,8 +5,10 @@
 #include "./shader_params.h"
 
 namespace shader_utils {
-void load_blinn_phong_uniforms(Shader &shader,
-                               BlinnPhongParameters &parameters);
-}
+void set_blinn_phong_uniforms(const Shader &shader,
+                              const BlinnPhongParameters &parameters);
+void set_blinn_phong_camera(const Shader &shader, const glm::mat4 &camera);
+void set_blinn_phong_view_pos(const Shader &shader, const glm::vec3 &viewPos);
+} // namespace shader_utils
 
 #endif

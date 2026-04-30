@@ -49,9 +49,7 @@ class ShapeFactory {
     }
 
   public:
-    ShapeFactory() {
-        _loadCubeMesh(); // Pre-load common shapes
-    }
+    ShapeFactory() = default;
 
     void registerMesh(const Mesh &mesh, const std::string &name) {
         _meshCache[name] = mesh;

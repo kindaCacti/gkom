@@ -31,24 +31,40 @@ class Entity {
         _pos.z += z;
     }
 
-    void rotate(const float x_rot = 0.0f, const float y_rot = 0.0f,
-                const float z_rot = 0.0f) {
-        _rot.x += x_rot;
-        _rot.y += y_rot;
-        _rot.z += z_rot;
+    virtual void rotate(const float dx_rot = 0.0f, const float dy_rot = 0.0f,
+                        const float dz_rot = 0.0f) {
+        _rot.x += dx_rot;
+        _rot.y += dy_rot;
+        _rot.z += dz_rot;
     }
 
-    void set_rotation(const float x_rot = 0.0f, const float y_rot = 0.0f,
-                      const float z_rot = 0.0f) {
+    virtual void set_rotation(const float x_rot = 0.0f,
+                              const float y_rot = 0.0f,
+                              const float z_rot = 0.0f) {
         _rot.x = x_rot;
         _rot.y = y_rot;
         _rot.z = z_rot;
     }
 
-    virtual glm::vec3 get_pos() const { return _pos; }
+    virtual void scale(const float dx = 0.f, const float dy = 0.f,
+                       const float dz = 0.f) {
+        _scale.x += dx;
+        _scale.x += dy;
+        _scale.x += dz;
+    }
+
+    virtual void set_scale(const float x = 0.f, const float y = 0.f,
+                           const float z = 0.f) {
+        _scale.x = x;
+        _scale.x = y;
+        _scale.x = z;
+    }
+
     virtual void set_scale(glm::vec3 &&scale) { _scale = std::move(scale); }
     virtual void set_position(glm::vec3 &&pos) { _pos = std::move(pos); }
     virtual void set_rotation(glm::vec3 &&rot) { _rot = std::move(rot); }
+
+    virtual glm::vec3 get_pos() const { return _pos; }
 };
 
 class DrawableEntity : public Entity {

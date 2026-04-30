@@ -15,14 +15,12 @@
 class Player : public DrawableEntity {
     std::unique_ptr<Shape> _shape;
 
-    void _set_shape_translation() const;
-
   public:
+    Player() = default;
     Player(std::unique_ptr<Shape> &&shape)
         : DrawableEntity(), _shape(std::move(shape)) {}
 
     void draw(Shader &shader) const override;
-
     glm::mat4 getTransformMatrix() const;
 };
 
