@@ -2,11 +2,12 @@
 
 #include "./utils.h"
 #include "./shader_s.h"
-#include "./blinn_phong.h"
+#include "./shader_params.h"
 
 void shader_utils::load_blinn_phong_uniforms(Shader &shader,
                                              BlinnPhongParameters &parameters) {
     // Blinn-Phong uniforms
+    shader.setInt("tex", parameters.tex);
     shader.setVec3("lightPos", parameters.light_pos);
     shader.setVec3("viewPos", parameters.view_pos);
     shader.setVec3("lightColor", parameters.light_color);
@@ -14,6 +15,5 @@ void shader_utils::load_blinn_phong_uniforms(Shader &shader,
     shader.setFloat("ambientStrength", parameters.ambient_strength);
     shader.setFloat("specularStrength", parameters.specular_strength);
     shader.setFloat("shininess", parameters.shininess);
-    shader.setMat4("projection", parameters.projection);
-    shader.setMat4("view", parameters.view);
+    shader.setMat4("camera", parameters.camera);
 }

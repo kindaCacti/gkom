@@ -11,7 +11,7 @@
 #include "camera.h"
 #include "entities/player.h"
 #include "shaders/utils.h"
-#include "shaders/blinn_phong.h"
+#include "shaders/shader_params.h"
 #include "mesh/mesh_loader.h"
 #include "./shaders/shader_s.h"
 #include "shapes/shape_factory.h"
@@ -97,15 +97,8 @@ int main() {
 
     // Link texture unit 0 to the generic texture sampler.
     ourShader.use();
-    ourShader.setInt("tex", 0);
-    // Blinn-Phong uniforms
-    ourShader.setVec3("lightPos", glm::vec3(2.0f, 2.0f, 2.0f));
-    ourShader.setVec3("viewPos", glm::vec3(0.0f, 3.0f, 5.0f));
-    ourShader.setVec3("lightColor", glm::vec3(1.0f));
-    ourShader.setVec3("baseColor", glm::vec3(0.8f, 0.5f, 0.2f));
-    ourShader.setFloat("ambientStrength", 0.15f);
-    ourShader.setFloat("specularStrength", 0.5f);
-    ourShader.setFloat("shininess", 64.0f);
+    BlinnPhongParameters bpp;
+    shader_utils::load_blinn_phong_uniforms(ourShader, bpp);
 
     {
         ShapeFactory sf;
@@ -121,21 +114,9 @@ int main() {
         cam.setAspectRatio(static_cast<float>(SCR_WIDTH) /
                            static_cast<float>(SCR_HEIGHT));
         cam.setPosition(glm::vec3(0.f, 3.f, 5.f));
-        // cam.setTarget(p.transform.getPosition());
 
-        // Player p(sf.createCube(glm::vec3(0.f, 0.f, 0.f)));
-
-        // You can unbind the VAO afterwards so other VAO calls won't
-        // accidentally modify this VAO, but this rarely happens. Modifying
-        // other VAOs requires a call to glBindVertexArray anyways so we
-        // generally don't unbind VAOs (nor VBOs) when it's not directly
-        // necessary. glBindVertexArray(0);
-
-        // render loop
-        // -----------
         glEnable(GL_DEPTH_TEST);
-        glDisable(GL_CULL_FACE);
-        float lastFrameTime = 0.0f;
+        float lastFrameTime = static_cast<float>(glfwGetTime());
         while (!glfwWindowShouldClose(window)) {
             float currentFrameTime = static_cast<float>(glfwGetTime());
             float deltaTime = currentFrameTime - lastFrameTime;
