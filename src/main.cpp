@@ -7,7 +7,8 @@
 #include <random>
 #include <vector>
 
-#include "shader_s.h"
+#include "shaders/utils.h"
+#include "shaders/blinn_phong.h"
 #include "mesh/mesh_loader.h"
 #include "shapes/shape_factory.h"
 #include "entities/player.h"
@@ -103,6 +104,10 @@ int main() {
         teapot->scale(glm::vec3(0.4f));
         teapot->translate(glm::vec3(0.f, -1.5f, 0.f));
         Player p(std::move(teapot));
+        Player p2(sf.createCube(glm::vec3(0.f, -100.f, 0.f)));
+        p2.set_scale(glm::vec3(100.0f, 1.0f, 100.0f));
+        p2.set_position(glm::vec3(0.0f, -2.0f, 0.0f));
+        BlinnPhongParameters bpp;
 
         // Player p(sf.createCube(glm::vec3(0.f, 0.f, 0.f)));
 
@@ -120,32 +125,22 @@ int main() {
             processInput(window, p);
             glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-            ourShader.use();
-
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, tex0);
 
-            // Blinn-Phong uniforms
-            ourShader.setVec3("lightPos", glm::vec3(2.0f, 2.0f, 2.0f));
-            ourShader.setVec3("viewPos", glm::vec3(0.0f, 0.0f, 3.0f));
-            ourShader.setVec3("lightColor", glm::vec3(1.0f));
-            ourShader.setVec3("baseColor", glm::vec3(0.8f, 0.5f, 0.2f));
-            ourShader.setFloat("ambientStrength", 0.15f);
-            ourShader.setFloat("specularStrength", 0.5f);
-            ourShader.setFloat("shininess", 64.0f);
+            ourShader.use();
 
-            glm::mat4 view = glm::mat4(1.0f);
-            glm::mat4 projection = glm::mat4(1.0f);
-            projection = glm::perspective(glm::radians(45.0f),
-                                          (float)SCR_WIDTH / (float)SCR_HEIGHT,
-                                          0.1f, 100.0f);
-            view = glm::translate(view, glm::vec3(0.0f, -5.0f, -3.0f));
-            view = glm::rotate(view, glm::radians(10.0f),
-                               glm::vec3(1.0f, 0.0f, 0.0f));
-            ourShader.setMat4("projection", projection);
-            ourShader.setMat4("view", view);
+            bpp.projection = glm::perspective(
+                glm::radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f,
+                100.0f);
+            bpp.view = glm::lookAt(glm::vec3(0.0f, 10.0f, -10.0f), p.get_pos(),
+                                   glm::vec3(0, 1, 0));
+            shader_utils::load_blinn_phong_uniforms(ourShader, bpp);
+            float rot = static_cast<float>(glfwGetTime());
+
+            p.set_rotation(0.0f, rot);
             p.draw(ourShader);
+            p2.draw(ourShader);
 
             glfwSwapBuffers(window);
             glfwPollEvents();
@@ -169,9 +164,9 @@ void processInput(GLFWwindow *window, Player &p) {
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
         p.move(0.f, 0.f, -MOVEMENT_SPEED);
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-        p.move(-MOVEMENT_SPEED, 0.f);
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
         p.move(MOVEMENT_SPEED, 0.f);
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+        p.move(-MOVEMENT_SPEED, 0.f);
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback

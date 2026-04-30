@@ -7,14 +7,14 @@
 
 #include "player.h"
 
-void Player::draw(Shader &shader) const {
-    time_t time_v;
-    time(&time_v);
-    float angle = 20.0f * static_cast<float>(glfwGetTime());
+void Player::_set_shape_translation() const {
     _shape->reset_transform();
     _shape->translate(_pos);
     _shape->rotate(_rot);
     _shape->scale(_scale);
-    // _shape->setRotation(angle, glm::vec3(0.0f, 1.0f, 0.0f));
+}
+
+void Player::draw(Shader &shader) const {
+    _set_shape_translation();
     _shape->draw(shader.ID);
 }

@@ -26,6 +26,25 @@ class Entity {
         _pos.y += y;
         _pos.z += z;
     }
+
+    void rotate(const float x_rot = 0.0f, const float y_rot = 0.0f,
+                const float z_rot = 0.0f) {
+        _rot.x += x_rot;
+        _rot.y += y_rot;
+        _rot.z += z_rot;
+    }
+
+    void set_rotation(const float x_rot = 0.0f, const float y_rot = 0.0f,
+                      const float z_rot = 0.0f) {
+        _rot.x = x_rot;
+        _rot.y = y_rot;
+        _rot.z = z_rot;
+    }
+
+    virtual glm::vec3 get_pos() const { return _pos; }
+    virtual void set_scale(glm::vec3 &&scale) { _scale = std::move(scale); }
+    virtual void set_position(glm::vec3 &&pos) { _pos = std::move(pos); }
+    virtual void set_rotation(glm::vec3 &&rot) { _rot = std::move(rot); }
 };
 
 class DrawableEntity : public Entity {

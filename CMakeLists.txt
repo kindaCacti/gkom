@@ -21,6 +21,7 @@ add_executable(gkom
     src/shapes/shape.h
     src/entities/player.cpp
     src/defines.h
+    src/shaders/utils.cpp
 )
 
 add_library(glm INTERFACE)
