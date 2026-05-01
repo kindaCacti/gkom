@@ -17,6 +17,7 @@ include_directories(
 
 add_executable(gkom 
     src/main.cpp
+    src/input.cpp
     includes/glad/src/glad.c
     src/shapes/shape.h
     src/entities/player.cpp
