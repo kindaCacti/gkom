@@ -17,6 +17,7 @@ struct Game {
     Player player;
     ShapeFactory shapeFactory;
     std::shared_ptr<Shader> shader;
+    Shape *axes[3]; // for debugging
 
     void loadShaders() {
         shader = std::make_shared<Shader>("../shaders/blinn-phong.vs",
@@ -31,7 +32,7 @@ struct Game {
     void loadPlayer() {
         auto player_asset = shapeFactory.createShape(PLAYER_ASSET_NAME);
         player_asset->transform.scale(glm::vec3(0.4f));
-        player_asset->transform.translate(glm::vec3(0.f, -1.5f, 0.f));
+        player_asset->transform.translate(glm::vec3(0.f, 0.f, -1.5f));
         player = Player(std::move(player_asset));
     }
 
@@ -41,10 +42,24 @@ struct Game {
         BlinnPhongParameters bpp;
         shader_utils::set_blinn_phong_uniforms(*shader, bpp);
         loadPlayer();
-        player.set_position(2.f, 0.f, 0.f);
+        player.set_position(0.f, 0.f, 0.f);
         cam.setAspectRatio(static_cast<float>(SCR_WIDTH) /
                            static_cast<float>(SCR_HEIGHT));
-        cam.setPosition(glm::vec3(0.f, 3.f, 5.f));
+        cam.setPosition(glm::vec3(-3.f, -3.f, 3.f));
+        axes[0] = shapeFactory.createShape("cube", glm::vec3(1.f, 0.f, 0.f))
+                      .release();
+        axes[1] = shapeFactory.createShape("cube", glm::vec3(0.f, 1.f, 0.f))
+                      .release();
+        axes[2] = shapeFactory.createShape("cube", glm::vec3(0.f, 0.f, 1.f))
+                      .release();
+        axes[0]->transform.rotate(90.f, glm::vec3(0.f, 1.f, 0.f));
+        axes[1]->transform.rotate(-90.f, glm::vec3(1.f, 0.f, 0.f));
+        axes[0]->transform.scale(glm::vec3(0.05f, 0.05f, 2.f));
+        axes[1]->transform.scale(glm::vec3(0.05f, 0.05f, 2.f));
+        axes[2]->transform.scale(glm::vec3(0.05f, 0.05f, 2.f));
+        axes[0]->transform.translate(glm::vec3(0.f, 0.f, .5f));
+        axes[1]->transform.translate(glm::vec3(0.f, 0.f, .5f));
+        axes[2]->transform.translate(glm::vec3(0.f, 0.f, .5f));
     }
 
     void updateCamera() {
@@ -54,7 +69,18 @@ struct Game {
         shader_utils::set_blinn_phong_camera(*shader, cam.getMatrix());
     }
 
-    void drawEntities() { player.draw(*shader); }
+    void drawEntities() {
+        player.draw(*shader);
+        for (int i = 0; i < 3; ++i) {
+            axes[i]->draw(shader->ID, glm::mat4(1.0f));
+        }
+    }
+
+    void onFramebufferResize(GLFWwindow *window, int width, int height) {
+        glViewport(0, 0, width, height);
+        cam.setAspectRatio(static_cast<float>(width) /
+                           static_cast<float>(height));
+    }
 };
 
 #endif
