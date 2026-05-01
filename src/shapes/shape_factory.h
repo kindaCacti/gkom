@@ -49,7 +49,7 @@ class ShapeFactory {
     }
 
   public:
-    ShapeFactory() = default;
+    ShapeFactory() { _loadCubeMesh(); }
 
     void registerMesh(const Mesh &mesh, const std::string &name) {
         _meshCache[name] = mesh;
@@ -63,10 +63,15 @@ class ShapeFactory {
         }
     }
 
-    std::unique_ptr<Shape> createShape(const std::string &name) {
+    std::unique_ptr<Shape>
+    createShape(const std::string &name,
+                std::optional<glm::vec3> colorOverride = std::nullopt) {
         auto it = _meshCache.find(name);
         if (it != _meshCache.end()) {
             auto newShape = std::make_unique<Shape>(&it->second);
+            if (colorOverride.has_value()) {
+                newShape->setColorOverride(colorOverride.value());
+            }
             return newShape;
         }
         return nullptr;
