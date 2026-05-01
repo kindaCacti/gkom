@@ -4,10 +4,12 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#define Y_UP glm::vec3(0.0f, 1.0f, 0.0f)
+#define Z_UP glm::vec3(0.0f, 0.0f, 1.0f)
 class Camera {
     glm::vec3 position = glm::vec3(0.0f, 3.0f, 0.0f);
     glm::vec3 target = glm::vec3(0.0f, 0.0f, 0.0f);
-    glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
+    glm::vec3 up = Z_UP;
     float fov = 45.0f;
     float aspectRatio = 800.0f / 600.0f;
     float nearPlane = 0.1f;
