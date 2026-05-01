@@ -3,8 +3,10 @@
 
 #include <glm/glm.hpp>
 
+#define DIFFUSE_TEXTURE_UNIT 0
+
 struct BlinnPhongParameters {
-    int tex = 0;
+    int diffuse = DIFFUSE_TEXTURE_UNIT;
     float ambient_strength = 0.15f;
     float specular_strength = 0.5f;
     float shininess = 64.0f;

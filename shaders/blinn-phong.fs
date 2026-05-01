@@ -14,7 +14,7 @@ uniform vec3 viewPos;
 uniform vec3 lightColor;
 
 // The texture to use for the material. If the texture is black, it will be ignored and vertex colors or base color will be used instead.
-uniform sampler2D tex;
+uniform sampler2D diffuseTex;
 
 // Used when vertex colors are not provided.
 uniform vec3 baseColor;
@@ -35,7 +35,7 @@ void main() {
     uv = fs_in.FragPos.xz * 0.25;
   }
   uv = fract(uv);
-  vec3 texColor = texture(tex, uv).rgb;
+  vec3 texColor = texture(diffuseTex, uv).rgb;
   // replace color with texture if texture is not black, otherwise use vertex color or base color
   if (length(texColor) > 1e-6) {
     albedo = texColor;

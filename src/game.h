@@ -39,7 +39,7 @@ struct Game {
         player_asset->transform.translate(glm::vec3(0.f, 0.f, 0.f));
         player_asset->transform.rotate(180.f, glm::vec3(0.f, 0.f, 1.f));
         if (auto noise = textureFactory.createTexture("noise").lock()) {
-            player_asset->bindTexture(noise);
+            player_asset->bindDiffuseTexture(noise);
         }
         player = Player(std::move(player_asset));
     }
@@ -84,6 +84,7 @@ struct Game {
     }
 
     void onFramebufferResize(GLFWwindow *window, int width, int height) {
+        glViewport(0, 0, width, height);
         cam.setAspectRatio(static_cast<float>(width) /
                            static_cast<float>(height));
     }

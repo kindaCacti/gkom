@@ -42,6 +42,8 @@ int main() {
 
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
         std::cout << "Failed to initialize GLAD" << std::endl;
+        glfwDestroyWindow(window);
+        glfwTerminate();
         return -1;
     }
 
@@ -86,6 +88,7 @@ int main() {
         }
     }
 
+    glfwDestroyWindow(window);
     glfwTerminate();
     return 0;
 }

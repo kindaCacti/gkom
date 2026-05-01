@@ -59,8 +59,6 @@ class ShapeFactory {
                       std::optional<glm::vec3> color = std::nullopt) {
         auto meshOpt = mesh_loader::load_obj(path, color);
         if (meshOpt.has_value()) {
-            std::cout << "Registered mesh: " << name << " from path: " << path
-                      << std::endl;
             _meshCache[name] =
                 std::make_shared<Mesh>(std::move(meshOpt.value()));
         }
@@ -71,7 +69,6 @@ class ShapeFactory {
                 std::optional<glm::vec3> colorOverride = std::nullopt) {
         auto it = _meshCache.find(name);
         if (it != _meshCache.end()) {
-            std::cout << "Created shape with mesh: " << name << std::endl;
             auto newShape = std::make_unique<Shape>(it->second);
             if (colorOverride.has_value()) {
                 newShape->setColorOverride(colorOverride.value());
