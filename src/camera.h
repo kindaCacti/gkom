@@ -72,6 +72,11 @@ class Camera {
 
     const glm::mat4 &getMatrix() const { return viewProjectionMatrix; }
     const glm::vec3 &getPosition() const { return position; }
+    const glm::vec3 getXYDirection() const {
+        glm::vec3 dir = target - position;
+        dir.z = 0.f;
+        return glm::normalize(dir);
+    }
 };
 
 #endif // CAMERA_H

@@ -15,13 +15,17 @@ void processInput(GLFWwindow *window, Game &game, float deltaTime) {
         glfwSetWindowShouldClose(window, true);
 
     const float step = MOVEMENT_SPEED * deltaTime;
+    glm::vec3 forward_dir = game.cam.getXYDirection();
+    glm::vec3 right_dir = glm::normalize(glm::cross(forward_dir, Z_UP));
+    forward_dir *= step;
+    right_dir *= step;
 
     if (isPressed(window, KEYBIND_MOVE_FORWARD))
-        game.player.move(0.f, step, 0.f);
+        game.player.move(forward_dir.x, forward_dir.y, forward_dir.z);
     if (isPressed(window, KEYBIND_MOVE_BACKWARD))
-        game.player.move(0.f, -step, 0.f);
+        game.player.move(-forward_dir.x, -forward_dir.y, -forward_dir.z);
     if (isPressed(window, KEYBIND_MOVE_LEFT))
-        game.player.move(-step, 0.f, 0.f);
+        game.player.move(-right_dir.x, -right_dir.y, -right_dir.z);
     if (isPressed(window, KEYBIND_MOVE_RIGHT))
-        game.player.move(step, 0.f, 0.f);
+        game.player.move(right_dir.x, right_dir.y, right_dir.z);
 }
