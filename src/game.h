@@ -46,6 +46,7 @@ struct Game {
         cam.setAspectRatio(static_cast<float>(SCR_WIDTH) /
                            static_cast<float>(SCR_HEIGHT));
         cam.setPosition(glm::vec3(-3.f, -3.f, 3.f));
+        cam.initOrbitForTarget(player.get_pos());
         axes[0] = shapeFactory.createShape("cube", glm::vec3(1.f, 0.f, 0.f))
                       .release();
         axes[1] = shapeFactory.createShape("cube", glm::vec3(0.f, 1.f, 0.f))
@@ -63,7 +64,7 @@ struct Game {
     }
 
     void updateCamera() {
-        cam.setTarget(player.get_pos());
+        cam.orbitAround(player.get_pos());
         shader->use();
         shader_utils::set_blinn_phong_view_pos(*shader, cam.getPosition());
         shader_utils::set_blinn_phong_camera(*shader, cam.getMatrix());
@@ -80,6 +81,10 @@ struct Game {
         glViewport(0, 0, width, height);
         cam.setAspectRatio(static_cast<float>(width) /
                            static_cast<float>(height));
+    }
+
+    void onMouseMove(GLFWwindow *window, double xpos, double ypos) {
+        cam.onMouseMove(xpos, ypos);
     }
 };
 

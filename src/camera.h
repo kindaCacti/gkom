@@ -1,6 +1,9 @@
 #ifndef CAMERA_H
 #define CAMERA_H
 
+#include <algorithm>
+#include <cmath>
+
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -17,6 +20,16 @@ class Camera {
     glm::mat4 viewMatrix = glm::mat4(1.0f);
     glm::mat4 projectionMatrix = glm::mat4(1.0f);
     glm::mat4 viewProjectionMatrix = glm::mat4(1.0f);
+
+    // Orbit camera parameters (around the current target).
+    float orbitYawDeg = 0.f;
+    float orbitPitchDeg = 0.f;
+    float orbitRadius = 5.f;
+    float orbitSensitivity = 0.05f;
+    bool orbitEnabled = false;
+    bool orbitFirstMouse = true;
+    double orbitLastX = 0.0;
+    double orbitLastY = 0.0;
 
     void recalculateViewProjectionMatrix() {
         viewProjectionMatrix = projectionMatrix * viewMatrix;
@@ -68,6 +81,66 @@ class Camera {
         nearPlane = nearP;
         farPlane = farP;
         recalculateProjectionMatrix();
+    }
+
+    void setOrbitSensitivity(float sensitivity) {
+        orbitSensitivity = sensitivity;
+    }
+
+    void initOrbitForTarget(const glm::vec3 &targetPos) {
+        orbitEnabled = true;
+        orbitFirstMouse = true;
+
+        target = targetPos;
+        const glm::vec3 delta = position - targetPos;
+        orbitRadius = glm::length(delta);
+        if (orbitRadius < 1e-4f) {
+            orbitRadius = 1.f;
+        }
+        orbitYawDeg = glm::degrees(std::atan2(delta.y, delta.x));
+        orbitPitchDeg = glm::degrees(
+            std::asin(std::clamp(delta.z / orbitRadius, -1.f, 1.f)));
+        recalculateViewMatrix();
+    }
+
+    // Mouse move handler: updates yaw/pitch for orbit camera.
+    void onMouseMove(double xpos, double ypos) {
+        if (!orbitEnabled) {
+            return;
+        }
+        if (orbitFirstMouse) {
+            orbitLastX = xpos;
+            orbitLastY = ypos;
+            orbitFirstMouse = false;
+            return;
+        }
+
+        const double dx = orbitLastX - xpos;
+        const double dy = ypos - orbitLastY;
+        orbitLastX = xpos;
+        orbitLastY = ypos;
+
+        orbitYawDeg += static_cast<float>(dx) * orbitSensitivity;
+        orbitPitchDeg += static_cast<float>(dy) * orbitSensitivity;
+        orbitPitchDeg = std::clamp(orbitPitchDeg, -89.0f, 89.0f);
+    }
+
+    // Orbit around the given target position (Z-up).
+    void orbitAround(const glm::vec3 &targetPos) {
+        if (!orbitEnabled) {
+            setTarget(glm::vec3(targetPos));
+            return;
+        }
+
+        const float yaw = glm::radians(orbitYawDeg);
+        const float pitch = glm::radians(orbitPitchDeg);
+        const float cosPitch = std::cos(pitch);
+        const glm::vec3 offset(orbitRadius * cosPitch * std::cos(yaw),
+                               orbitRadius * cosPitch * std::sin(yaw),
+                               orbitRadius * std::sin(pitch));
+
+        setTarget(glm::vec3(targetPos));
+        setPosition(glm::vec3(targetPos + offset));
     }
 
     const glm::mat4 &getMatrix() const { return viewProjectionMatrix; }

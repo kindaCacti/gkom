@@ -58,6 +58,15 @@ int main() {
                 }
             });
         glfwSetWindowUserPointer(window, &game);
+        glfwSetCursorPosCallback(
+            window, [](GLFWwindow *window, double xpos, double ypos) {
+                Game *game =
+                    reinterpret_cast<Game *>(glfwGetWindowUserPointer(window));
+                if (game) {
+                    game->onMouseMove(window, xpos, ypos);
+                }
+            });
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
         game.loadAssets();
         game.setupDefaultScene();
 
