@@ -32,7 +32,8 @@ struct Game {
     void loadPlayer() {
         auto player_asset = shapeFactory.createShape(PLAYER_ASSET_NAME);
         player_asset->transform.scale(glm::vec3(0.4f));
-        player_asset->transform.translate(glm::vec3(0.f, 0.f, -1.5f));
+        player_asset->transform.translate(glm::vec3(0.f, 0.f, 0.f));
+        player_asset->transform.rotate(180.f, glm::vec3(0.f, 0.f, 1.f));
         player = Player(std::move(player_asset));
     }
 
@@ -45,7 +46,7 @@ struct Game {
         player.set_position(0.f, 0.f, 0.f);
         cam.setAspectRatio(static_cast<float>(SCR_WIDTH) /
                            static_cast<float>(SCR_HEIGHT));
-        cam.setPosition(glm::vec3(-3.f, -3.f, 3.f));
+        cam.setPosition(glm::vec3(-10.f, -10.f, 15.f));
         cam.initOrbitForTarget(player.get_pos());
         axes[0] = shapeFactory.createShape("cube", glm::vec3(1.f, 0.f, 0.f))
                       .release();
@@ -65,6 +66,7 @@ struct Game {
 
     void updateCamera() {
         cam.orbitAround(player.get_pos());
+        player.set_rotation(0.f, 0.f, cam.getYaw());
         shader->use();
         shader_utils::set_blinn_phong_view_pos(*shader, cam.getPosition());
         shader_utils::set_blinn_phong_camera(*shader, cam.getMatrix());

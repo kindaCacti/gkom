@@ -24,6 +24,8 @@ class Camera {
     // Orbit camera parameters (around the current target).
     float orbitYawDeg = 0.f;
     float orbitPitchDeg = 0.f;
+    float minPitchDeg = 0.f;
+    float maxPitchDeg = 80.f;
     float orbitRadius = 5.f;
     float orbitSensitivity = 0.05f;
     bool orbitEnabled = false;
@@ -122,7 +124,7 @@ class Camera {
 
         orbitYawDeg += static_cast<float>(dx) * orbitSensitivity;
         orbitPitchDeg += static_cast<float>(dy) * orbitSensitivity;
-        orbitPitchDeg = std::clamp(orbitPitchDeg, -89.0f, 89.0f);
+        orbitPitchDeg = std::clamp(orbitPitchDeg, minPitchDeg, maxPitchDeg);
     }
 
     // Orbit around the given target position (Z-up).
@@ -145,6 +147,8 @@ class Camera {
 
     const glm::mat4 &getMatrix() const { return viewProjectionMatrix; }
     const glm::vec3 &getPosition() const { return position; }
+    const float getYaw() const { return orbitYawDeg; }
+    const float getPitch() const { return orbitPitchDeg; }
     const glm::vec3 getXYDirection() const {
         glm::vec3 dir = target - position;
         dir.z = 0.f;
