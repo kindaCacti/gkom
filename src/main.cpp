@@ -19,10 +19,7 @@
 #include "entities/player.h"
 #include "defines.h"
 #include "game.h"
-
-void framebuffer_size_callback(GLFWwindow *window, int width, int height);
-void processInput(GLFWwindow *window, Player &p);
-
+#include "input.h"
 // settings
 
 int main() {
@@ -42,7 +39,6 @@ int main() {
         return -1;
     }
     glfwMakeContextCurrent(window);
-    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
         std::cout << "Failed to initialize GLAD" << std::endl;
@@ -53,6 +49,15 @@ int main() {
 
     {
         Game game;
+        glfwSetFramebufferSizeCallback(
+            window, [](GLFWwindow *window, int width, int height) {
+                Game *game =
+                    reinterpret_cast<Game *>(glfwGetWindowUserPointer(window));
+                if (game) {
+                    game->onFramebufferResize(window, width, height);
+                }
+            });
+        glfwSetWindowUserPointer(window, &game);
         game.loadAssets();
         game.setupDefaultScene();
 
@@ -62,12 +67,12 @@ int main() {
             float currentFrameTime = static_cast<float>(glfwGetTime());
             float deltaTime = currentFrameTime - lastFrameTime;
             lastFrameTime = currentFrameTime;
-            processInput(window, game.player);
+            processInput(window, game, deltaTime);
             glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-            glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, tex0);
+            // glActiveTexture(GL_TEXTURE0);
+            // glBindTexture(GL_TEXTURE_2D, tex0);
 
             game.updateCamera();
             game.drawEntities();
@@ -81,21 +86,4 @@ int main() {
 
     glfwTerminate();
     return 0;
-}
-
-void processInput(GLFWwindow *window, Player &p) {
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, true);
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-        p.move(0.f, 0.f, MOVEMENT_SPEED);
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-        p.move(0.f, 0.f, -MOVEMENT_SPEED);
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-        p.move(MOVEMENT_SPEED, 0.f);
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-        p.move(-MOVEMENT_SPEED, 0.f);
-}
-
-void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
-    glViewport(0, 0, width, height);
 }
