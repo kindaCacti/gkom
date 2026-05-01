@@ -11,13 +11,15 @@
 #include "defines.h"
 #include "shaders/shader_s.h"
 #include "shaders/utils.h"
-
+#include "textures/texture_factory.h"
+#include "textures/texture.h"
 struct Game {
     Camera cam;
     Player player;
     ShapeFactory shapeFactory;
+    TextureFactory textureFactory;
     std::shared_ptr<Shader> shader;
-    Shape *axes[3]; // for debugging
+    std::unique_ptr<Shape> axes[3]; // for debugging
 
     void loadShaders() {
         shader = std::make_shared<Shader>("../shaders/blinn-phong.vs",
@@ -27,6 +29,8 @@ struct Game {
     void loadAssets() {
         shapeFactory.registerMesh("../assets/teapot.obj", "teapot",
                                   glm::vec3(0.8f, 0.5f, 0.2f));
+        textureFactory.registerTexture(
+            std::make_shared<Texture>(Texture::newNoise2D(512, 512)), "noise");
     }
 
     void loadPlayer() {
@@ -34,6 +38,9 @@ struct Game {
         player_asset->transform.scale(glm::vec3(0.4f));
         player_asset->transform.translate(glm::vec3(0.f, 0.f, 0.f));
         player_asset->transform.rotate(180.f, glm::vec3(0.f, 0.f, 1.f));
+        if (auto noise = textureFactory.createTexture("noise").lock()) {
+            player_asset->bindTexture(noise);
+        }
         player = Player(std::move(player_asset));
     }
 
@@ -48,12 +55,9 @@ struct Game {
                            static_cast<float>(SCR_HEIGHT));
         cam.setPosition(glm::vec3(-10.f, -10.f, 15.f));
         cam.initOrbitForTarget(player.get_pos());
-        axes[0] = shapeFactory.createShape("cube", glm::vec3(1.f, 0.f, 0.f))
-                      .release();
-        axes[1] = shapeFactory.createShape("cube", glm::vec3(0.f, 1.f, 0.f))
-                      .release();
-        axes[2] = shapeFactory.createShape("cube", glm::vec3(0.f, 0.f, 1.f))
-                      .release();
+        axes[0] = shapeFactory.createShape("cube", glm::vec3(1.f, 0.f, 0.f));
+        axes[1] = shapeFactory.createShape("cube", glm::vec3(0.f, 1.f, 0.f));
+        axes[2] = shapeFactory.createShape("cube", glm::vec3(0.f, 0.f, 1.f));
         axes[0]->transform.rotate(90.f, glm::vec3(0.f, 1.f, 0.f));
         axes[1]->transform.rotate(-90.f, glm::vec3(1.f, 0.f, 0.f));
         axes[0]->transform.scale(glm::vec3(0.05f, 0.05f, 2.f));
@@ -80,7 +84,6 @@ struct Game {
     }
 
     void onFramebufferResize(GLFWwindow *window, int width, int height) {
-        glViewport(0, 0, width, height);
         cam.setAspectRatio(static_cast<float>(width) /
                            static_cast<float>(height));
     }

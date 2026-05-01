@@ -344,10 +344,7 @@ load_obj(const std::string &path,
         return std::nullopt;
     }
 
-    Mesh mesh{};
-    mesh.indexCount = static_cast<unsigned int>(indices.size());
-    Mesh::setupBuffers(vertices, indices, mesh, hasNormals, hasColors,
-                       hasTexcoords);
+    Mesh mesh(vertices, indices, hasNormals, hasColors, hasTexcoords);
     return mesh;
 }
 

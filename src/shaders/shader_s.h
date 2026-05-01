@@ -13,7 +13,24 @@
 
 class Shader {
   public:
-    unsigned int ID;
+    unsigned int ID = 0;
+
+    Shader(const Shader &) = delete;
+    Shader &operator=(const Shader &) = delete;
+
+    Shader(Shader &&other) noexcept : ID(other.ID) { other.ID = 0; }
+
+    Shader &operator=(Shader &&other) noexcept {
+        if (this == &other) {
+            return *this;
+        }
+        if (ID != 0) {
+            glDeleteProgram(ID);
+        }
+        ID = other.ID;
+        other.ID = 0;
+        return *this;
+    }
     // constructor generates the shader on the fly
     // ------------------------------------------------------------------------
     Shader(const char *vertexPath, const char *fragmentPath) {
@@ -67,6 +84,12 @@ class Shader {
         // longer necessary
         glDeleteShader(vertex);
         glDeleteShader(fragment);
+    }
+
+    ~Shader() {
+        if (ID != 0) {
+            glDeleteProgram(ID);
+        }
     }
     // activate the shader
     // ------------------------------------------------------------------------

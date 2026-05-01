@@ -15,10 +15,9 @@
 class ShapeFactory {
   private:
     // This stores the actual GPU data so it stays in memory
-    std::map<std::string, Mesh> _meshCache;
+    std::map<std::string, std::shared_ptr<Mesh>> _meshCache;
 
     void _loadCubeMesh() {
-        Mesh cube;
         float vertices[] = {
             // position          // color
             0.5f,  -0.5f, 0.5f,  1.0f, 0.0f, 0.0f, // bottom right
@@ -39,19 +38,20 @@ class ShapeFactory {
             0, 2, 4, 2, 6, 4, // Right
             1, 3, 5, 3, 7, 5  // Left
         };
-        cube.indexCount = 36;
 
-        Mesh::setupBuffers(std::vector<float>(vertices, vertices + 6 * 8),
-                           std::vector<unsigned int>(indices, indices + 36),
-                           cube, false, true, false);
+        auto m = std::make_shared<Mesh>(
+            std::vector<float>(vertices, vertices + 6 * 8),
+            std::vector<unsigned int>(indices, indices + 36), false, true,
+            false);
 
-        _meshCache["cube"] = cube;
+        _meshCache["cube"] = m;
     }
 
   public:
     ShapeFactory() { _loadCubeMesh(); }
 
-    void registerMesh(const Mesh &mesh, const std::string &name) {
+    void registerMesh(const std::shared_ptr<Mesh> &mesh,
+                      const std::string &name) {
         _meshCache[name] = mesh;
     }
 
@@ -59,7 +59,10 @@ class ShapeFactory {
                       std::optional<glm::vec3> color = std::nullopt) {
         auto meshOpt = mesh_loader::load_obj(path, color);
         if (meshOpt.has_value()) {
-            _meshCache[name] = meshOpt.value();
+            std::cout << "Registered mesh: " << name << " from path: " << path
+                      << std::endl;
+            _meshCache[name] =
+                std::make_shared<Mesh>(std::move(meshOpt.value()));
         }
     }
 
@@ -68,7 +71,8 @@ class ShapeFactory {
                 std::optional<glm::vec3> colorOverride = std::nullopt) {
         auto it = _meshCache.find(name);
         if (it != _meshCache.end()) {
-            auto newShape = std::make_unique<Shape>(&it->second);
+            std::cout << "Created shape with mesh: " << name << std::endl;
+            auto newShape = std::make_unique<Shape>(it->second);
             if (colorOverride.has_value()) {
                 newShape->setColorOverride(colorOverride.value());
             }
@@ -80,19 +84,11 @@ class ShapeFactory {
     std::unique_ptr<Shape> createCube(glm::vec3 position) {
         auto it = _meshCache.find("cube");
         if (it != _meshCache.end()) {
-            auto newShape = std::make_unique<Shape>(&it->second);
+            auto newShape = std::make_unique<Shape>(it->second);
             newShape->transform.translate(position);
             return newShape;
         }
         return nullptr;
-    }
-
-    // Clean up GPU resources on destruction
-    ~ShapeFactory() {
-        for (auto &pair : _meshCache) {
-            glDeleteVertexArrays(1, &pair.second.VAO);
-            glDeleteBuffers(1, &pair.second.VBO);
-        }
     }
 };
 

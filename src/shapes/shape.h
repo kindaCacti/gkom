@@ -5,27 +5,37 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include <optional>
+#include <memory>
 
 #include "../mesh/mesh.h"
 #include "../utils.h"
+#include "../textures/texture.h"
 
 class Shape {
-    const Mesh *mesh; // Pointer to shared GPU data
+    const std::weak_ptr<Mesh> mesh; // Pointer to shared GPU data
     std::optional<glm::vec3> colorOverride;
+    std::weak_ptr<Texture> tex;
 
   public:
     Transform transform;
 
-    Shape(const Mesh *m) : mesh(m) {}
+    Shape(const std::shared_ptr<Mesh> &m) : mesh(m) {}
 
     void setColorOverride(const glm::vec3 &color) { colorOverride = color; }
 
+    void bindTexture(const std::shared_ptr<Texture> &texture) { tex = texture; }
+
     void draw(unsigned int shaderProgram,
               const glm::mat4 &parentTransform) const {
-        const bool shouldRestoreColorAttrib = mesh->hasColors;
+        auto meshShared = mesh.lock();
+        if (!meshShared) {
+            return;
+        }
+
+        const bool shouldRestoreColorAttrib = meshShared->hasColors;
         if (colorOverride.has_value()) {
             const glm::vec3 &c = colorOverride.value();
-            glBindVertexArray(mesh->VAO);
+            glBindVertexArray(meshShared->VAO);
             glDisableVertexAttribArray(MeshAttrib::Color);
             glVertexAttrib3f(MeshAttrib::Color, c.r, c.g, c.b);
         }
@@ -36,11 +46,18 @@ class Shape {
         glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 
         // Draw the shared mesh
-        glBindVertexArray(mesh->VAO);
-        glDrawElements(GL_TRIANGLES, mesh->indexCount, GL_UNSIGNED_INT, 0);
+        glBindVertexArray(meshShared->VAO);
+        if (auto texShared = tex.lock()) {
+            texShared->bind(0);
+        }
+        glDrawElements(GL_TRIANGLES, meshShared->indexCount, GL_UNSIGNED_INT,
+                       0);
+        if (auto texShared = tex.lock()) {
+            texShared->unbind();
+        }
 
         if (colorOverride.has_value() && shouldRestoreColorAttrib) {
-            glBindVertexArray(mesh->VAO);
+            glBindVertexArray(meshShared->VAO);
             glEnableVertexAttribArray(MeshAttrib::Color);
         }
     }

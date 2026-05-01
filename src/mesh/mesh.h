@@ -1,6 +1,11 @@
 #ifndef MESH_H
 #define MESH_H
 
+#include <cstddef>
+#include <cstdint>
+
+#include <glad/glad.h>
+
 namespace MeshAttrib {
 constexpr unsigned int Position = 0;
 constexpr unsigned int Normal = 1;
@@ -15,30 +20,76 @@ struct Mesh {
     bool hasNormals = false;
     bool hasColors = false;
 
-    static void setupBuffers(const std::vector<float> &vertices,
-                             const std::vector<unsigned int> &indices,
-                             Mesh &mesh, bool hasNormals, bool hasColors,
-                             bool hasTexcoords) {
-        glGenVertexArrays(1, &mesh.VAO);
-        glGenBuffers(1, &mesh.VBO);
-        glGenBuffers(1, &mesh.EBO);
+    Mesh(const Mesh &) = delete;
+    Mesh &operator=(const Mesh &) = delete;
 
-        glBindVertexArray(mesh.VAO);
+    Mesh(Mesh &&other) noexcept
+        : VAO(other.VAO), VBO(other.VBO), EBO(other.EBO),
+          indexCount(other.indexCount), hasTexcoords(other.hasTexcoords),
+          hasNormals(other.hasNormals), hasColors(other.hasColors) {
+        other.VAO = 0;
+        other.VBO = 0;
+        other.EBO = 0;
+        other.indexCount = 0;
+        other.hasTexcoords = false;
+        other.hasNormals = false;
+        other.hasColors = false;
+    }
 
-        glBindBuffer(GL_ARRAY_BUFFER, mesh.VBO);
+    Mesh &operator=(Mesh &&other) noexcept {
+        if (this == &other) {
+            return *this;
+        }
+        if (VAO != 0) {
+            glDeleteVertexArrays(1, &VAO);
+        }
+        if (VBO != 0) {
+            glDeleteBuffers(1, &VBO);
+        }
+        if (EBO != 0) {
+            glDeleteBuffers(1, &EBO);
+        }
+
+        VAO = other.VAO;
+        VBO = other.VBO;
+        EBO = other.EBO;
+        indexCount = other.indexCount;
+        hasTexcoords = other.hasTexcoords;
+        hasNormals = other.hasNormals;
+        hasColors = other.hasColors;
+
+        other.VAO = 0;
+        other.VBO = 0;
+        other.EBO = 0;
+        other.indexCount = 0;
+        other.hasTexcoords = false;
+        other.hasNormals = false;
+        other.hasColors = false;
+        return *this;
+    }
+
+    Mesh(const std::vector<float> &vertices,
+         const std::vector<unsigned int> &indices, bool hasNormals,
+         bool hasColors, bool hasTexcoords)
+        : indexCount(static_cast<unsigned int>(indices.size())),
+          hasNormals(hasNormals), hasColors(hasColors),
+          hasTexcoords(hasTexcoords) {
+        glGenVertexArrays(1, &VAO);
+        glGenBuffers(1, &VBO);
+        glGenBuffers(1, &EBO);
+
+        glBindVertexArray(VAO);
+
+        glBindBuffer(GL_ARRAY_BUFFER, VBO);
         glBufferData(GL_ARRAY_BUFFER,
                      static_cast<GLsizeiptr>(vertices.size() * sizeof(float)),
                      vertices.data(), GL_STATIC_DRAW);
 
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh.EBO);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
         glBufferData(
             GL_ELEMENT_ARRAY_BUFFER,
             static_cast<GLsizeiptr>(indices.size() * sizeof(unsigned int)),
             indices.data(), GL_STATIC_DRAW);
-
-        mesh.hasNormals = hasNormals;
-        mesh.hasColors = hasColors;
-        mesh.hasTexcoords = hasTexcoords;
 
         // Packed order: position, normal, color, texCoord
         const int strideFloats = 3 + (hasNormals ? 3 : 0) +
@@ -74,6 +125,18 @@ struct Mesh {
                          sizeof(float)));
             glEnableVertexAttribArray(MeshAttrib::TexCoord);
             offsetFloats += 2;
+        }
+    }
+
+    ~Mesh() {
+        if (VAO != 0) {
+            glDeleteVertexArrays(1, &VAO);
+        }
+        if (VBO != 0) {
+            glDeleteBuffers(1, &VBO);
+        }
+        if (EBO != 0) {
+            glDeleteBuffers(1, &EBO);
         }
     }
 };
