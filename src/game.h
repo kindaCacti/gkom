@@ -9,16 +9,19 @@
 
 #include "camera.h"
 #include "./entities/player.h"
-#include "./entities/emiter.h"
+#include "./entities/emmiter.h"
 #include "defines.h"
 #include "shaders/shader_s.h"
 #include "shaders/utils.h"
 #include "textures/texture_factory.h"
 #include "textures/texture.h"
+#include <list>
+
 struct Game {
     Camera cam;
-    Player player;
-    std::vector<Emiter> emiters;
+    std::shared_ptr<Player> player;
+    std::list<std::shared_ptr<Emmiter>> emmiters;
+    std::list<std::shared_ptr<Bullet>> bullets;
     ShapeFactory shapeFactory;
     TextureFactory textureFactory;
     std::shared_ptr<Shader> shader;
@@ -30,6 +33,8 @@ struct Game {
     }
 
     void loadAssets() {
+        textureFactory.registerTexture(
+            std::make_shared<Texture>(Texture::newNoise2D(512, 512)), "noise");
         shapeFactory.registerMesh("../assets/teapot.obj", "teapot",
                                   glm::vec3(0.8f, 0.5f, 0.2f));
         shapeFactory.registerCube();
@@ -43,27 +48,60 @@ struct Game {
         if (auto noise = textureFactory.createTexture("noise").lock()) {
             player_asset->bindDiffuseTexture(noise);
         }
-        player = Player(std::move(player_asset));
+        player = std::make_shared<Player>(Player(std::move(player_asset)));
     }
 
-    void spawnEmiter(glm::vec3 position, glm::vec3 scale) {
-        auto emiter_asset = shapeFactory.createShape(EMITER_ASSET_NAME);
-        emiter_asset->transform.scale(scale);
-        emiter_asset->transform.translate(position);
-        emiters.push_back(Emiter(std::move(emiter_asset)));
+    void spawnEmiter(float current_time, float time_between_shots) {
+        auto emmiter_asset = shapeFactory.createShape(EMMITER_ASSET_NAME);
+        emmiter_asset->transform.scale(glm::vec3(0.4f));
+        emmiter_asset->transform.translate(glm::vec3(0.f, 0.f, 0.f));
+        emmiter_asset->transform.rotate(180.f, glm::vec3(0.f, 0.f, 1.f));
+        if (auto noise = textureFactory.createTexture("noise").lock()) {
+            emmiter_asset->bindDiffuseTexture(noise);
+        }
+        emmiters.push_back(std::make_shared<Emmiter>(std::move(emmiter_asset), current_time, time_between_shots));
     }
 
-    void setupDefaultScene() {
+    void make_emmiters_shoot(float current_time, float speed) {
+        for(auto emmiter : emmiters) {
+            auto bullet_pointer = emmiter->shoot_if_time(shapeFactory, current_time, speed);
+            if(bullet_pointer) {
+                bullets.push_back(bullet_pointer);
+            }
+        }
+    }
+
+    void move_bullets(float delta_time) {
+        for(auto bullet : bullets) {
+            bullet->step(delta_time);
+        }
+    }
+
+    void remove_out_of_bounds_bullets() {
+        auto it = bullets.begin();
+        while(it != bullets.end()) {
+            float xpos = (*it)->get_pos().x;
+            float zpos = (*it)->get_pos().z;
+            if(xpos < AREA_MIN_X or xpos > AREA_MAX_X or zpos < AREA_MIN_Z or zpos > AREA_MAX_Z) {
+                it = bullets.erase(it);
+            } else {
+                ++it;
+            }
+        }
+    }
+
+    void setupDefaultScene(float current_time) {
         loadShaders();
         shader->use();
         BlinnPhongParameters bpp;
         shader_utils::set_blinn_phong_uniforms(*shader, bpp);
         spawnPlayer();
-        player.set_position(2.f, 0.f, 0.f);
+        spawnEmiter(current_time, 1.0f);
+        player->set_position(2.f, 0.f, 0.f);
         cam.setAspectRatio(static_cast<float>(SCR_WIDTH) /
                            static_cast<float>(SCR_HEIGHT));
         cam.setPosition(glm::vec3(-10.f, -10.f, 15.f));
-        cam.initOrbitForTarget(player.get_pos());
+        cam.initOrbitForTarget(player->get_pos());
         axes[0] = shapeFactory.createShape("cube", glm::vec3(1.f, 0.f, 0.f));
         axes[1] = shapeFactory.createShape("cube", glm::vec3(0.f, 1.f, 0.f));
         axes[2] = shapeFactory.createShape("cube", glm::vec3(0.f, 0.f, 1.f));
@@ -78,15 +116,21 @@ struct Game {
     }
 
     void updateCamera() {
-        cam.orbitAround(player.get_pos());
-        player.set_rotation(0.f, 0.f, cam.getYaw());
+        cam.orbitAround(player->get_pos());
+        player->set_rotation(0.f, 0.f, cam.getYaw());
         shader->use();
         shader_utils::set_blinn_phong_view_pos(*shader, cam.getPosition());
         shader_utils::set_blinn_phong_camera(*shader, cam.getMatrix());
     }
 
     void drawEntities() {
-        player.draw(*shader);
+        player->draw(*shader);
+        for (auto& emiter : emmiters) {
+            emiter->draw(*shader);
+        }
+        for (auto& bullet : bullets) {
+            bullet->draw(*shader);
+        }
         for (int i = 0; i < 3; ++i) {
             axes[i]->draw(shader->ID, glm::mat4(1.0f));
         }
@@ -101,6 +145,9 @@ struct Game {
     void onMouseMove(GLFWwindow *window, double xpos, double ypos) {
         cam.onMouseMove(xpos, ypos);
     }
+
+
+    ~Game() = default;
 };
 
 #endif

@@ -49,6 +49,7 @@ int main() {
 
     {
         Game game;
+        glfwSetWindowUserPointer(window, &game);
         glfwSetFramebufferSizeCallback(
             window, [](GLFWwindow *window, int width, int height) {
                 Game *game =
@@ -57,7 +58,6 @@ int main() {
                     game->onFramebufferResize(window, width, height);
                 }
             });
-        glfwSetWindowUserPointer(window, &game);
         glfwSetCursorPosCallback(
             window, [](GLFWwindow *window, double xpos, double ypos) {
                 Game *game =
@@ -68,7 +68,7 @@ int main() {
             });
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
         game.loadAssets();
-        game.setupDefaultScene();
+        game.setupDefaultScene(static_cast<float>(glfwGetTime()));
 
         glEnable(GL_DEPTH_TEST);
         float lastFrameTime = static_cast<float>(glfwGetTime());
@@ -81,6 +81,9 @@ int main() {
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
             game.updateCamera();
+            game.make_emmiters_shoot(currentFrameTime, BULLET_SPEED);
+            game.move_bullets(deltaTime);
+            game.remove_out_of_bounds_bullets();
             game.drawEntities();
 
             glfwSwapBuffers(window);

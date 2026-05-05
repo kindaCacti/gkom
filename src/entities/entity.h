@@ -3,6 +3,7 @@
 
 #include "../shaders/shader_s.h"
 #include "../utils.h"
+#include "../shapes/shape.h"
 
 class Entity {
   protected:
@@ -63,15 +64,35 @@ class Entity {
     virtual void set_scale(glm::vec3 &&scale) { _scale = std::move(scale); }
     virtual void set_position(glm::vec3 &&pos) { _pos = std::move(pos); }
     virtual void set_rotation(glm::vec3 &&rot) { _rot = std::move(rot); }
+    virtual void set_scale(glm::vec3 &scale) { _scale = glm::vec3(scale); }
+    virtual void set_position(glm::vec3 &pos) { _pos = glm::vec3(pos); }
+    virtual void set_rotation(glm::vec3 &rot) { _rot = glm::vec3(rot); }
+
 
     virtual glm::vec3 get_pos() const { return _pos; }
 };
 
 class DrawableEntity : public Entity {
-  public:
-    DrawableEntity() : Entity() {}
+    std::unique_ptr<Shape> _shape;
 
-    virtual void draw(Shader &shader) const = 0;
+  public:
+    DrawableEntity(std::unique_ptr<Shape>&& shape) : Entity(), _shape(std::move(shape)) {}
+    DrawableEntity(DrawableEntity&&) = default;
+
+    DrawableEntity& operator=(DrawableEntity&&) = default;
+
+
+    virtual void draw(Shader &shader) const {
+        _shape->draw(shader.ID, getTransformMatrix());
+    }
+
+    virtual glm::mat4 getTransformMatrix() const {
+        glm::mat4 T = glm::translate(glm::mat4(1.0f), _pos);
+        glm::mat4 R = getEulerRotationMatrix(_rot);
+        glm::mat4 S = glm::scale(glm::mat4(1.0f), _scale);
+        return T * R * S;
+    }
+
     virtual ~DrawableEntity() = default;
 };
 

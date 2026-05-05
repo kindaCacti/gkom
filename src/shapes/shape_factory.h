@@ -93,11 +93,8 @@ class ShapeFactory {
     // }
 
     // Clean up GPU resources on destruction
-    ~ShapeFactory() {
-        for (auto &pair : _meshCache) {
-            glDeleteVertexArrays(1, &pair.second.VAO);
-            glDeleteBuffers(1, &pair.second.VBO);
-        }
+    ~ShapeFactory(){
+        
     }
 };
 

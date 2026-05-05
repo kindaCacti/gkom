@@ -21,11 +21,11 @@ void processInput(GLFWwindow *window, Game &game, float deltaTime) {
     right_dir *= step;
 
     if (isPressed(window, KEYBIND_MOVE_FORWARD))
-        game.player.move(forward_dir.x, forward_dir.y, forward_dir.z);
+        game.player->move(forward_dir.x, forward_dir.y, forward_dir.z);
     if (isPressed(window, KEYBIND_MOVE_BACKWARD))
-        game.player.move(-forward_dir.x, -forward_dir.y, -forward_dir.z);
+        game.player->move(-forward_dir.x, -forward_dir.y, -forward_dir.z);
     if (isPressed(window, KEYBIND_MOVE_LEFT))
-        game.player.move(-right_dir.x, -right_dir.y, -right_dir.z);
+        game.player->move(-right_dir.x, -right_dir.y, -right_dir.z);
     if (isPressed(window, KEYBIND_MOVE_RIGHT))
-        game.player.move(right_dir.x, right_dir.y, right_dir.z);
+        game.player->move(right_dir.x, right_dir.y, right_dir.z);
 }
