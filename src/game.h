@@ -5,9 +5,11 @@
 #define GAME_H
 
 #include <memory>
+#include <vector>
 
 #include "camera.h"
 #include "./entities/player.h"
+#include "./entities/emiter.h"
 #include "defines.h"
 #include "shaders/shader_s.h"
 #include "shaders/utils.h"
@@ -16,6 +18,7 @@
 struct Game {
     Camera cam;
     Player player;
+    std::vector<Emiter> emiters;
     ShapeFactory shapeFactory;
     TextureFactory textureFactory;
     std::shared_ptr<Shader> shader;
@@ -29,11 +32,10 @@ struct Game {
     void loadAssets() {
         shapeFactory.registerMesh("../assets/teapot.obj", "teapot",
                                   glm::vec3(0.8f, 0.5f, 0.2f));
-        textureFactory.registerTexture(
-            std::make_shared<Texture>(Texture::newNoise2D(512, 512)), "noise");
+        shapeFactory.registerCube();
     }
 
-    void loadPlayer() {
+    void spawnPlayer() {
         auto player_asset = shapeFactory.createShape(PLAYER_ASSET_NAME);
         player_asset->transform.scale(glm::vec3(0.4f));
         player_asset->transform.translate(glm::vec3(0.f, 0.f, 0.f));
@@ -44,13 +46,20 @@ struct Game {
         player = Player(std::move(player_asset));
     }
 
+    void spawnEmiter(glm::vec3 position, glm::vec3 scale) {
+        auto emiter_asset = shapeFactory.createShape(EMITER_ASSET_NAME);
+        emiter_asset->transform.scale(scale);
+        emiter_asset->transform.translate(position);
+        emiters.push_back(Emiter(std::move(emiter_asset)));
+    }
+
     void setupDefaultScene() {
         loadShaders();
         shader->use();
         BlinnPhongParameters bpp;
         shader_utils::set_blinn_phong_uniforms(*shader, bpp);
-        loadPlayer();
-        player.set_position(0.f, 0.f, 0.f);
+        spawnPlayer();
+        player.set_position(2.f, 0.f, 0.f);
         cam.setAspectRatio(static_cast<float>(SCR_WIDTH) /
                            static_cast<float>(SCR_HEIGHT));
         cam.setPosition(glm::vec3(-10.f, -10.f, 15.f));

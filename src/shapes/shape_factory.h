@@ -55,6 +55,10 @@ class ShapeFactory {
         _meshCache[name] = mesh;
     }
 
+    void registerCube() {
+        _loadCubeMesh();
+    }
+
     void registerMesh(const std::string &path, const std::string &name,
                       std::optional<glm::vec3> color = std::nullopt) {
         auto meshOpt = mesh_loader::load_obj(path, color);
@@ -78,14 +82,22 @@ class ShapeFactory {
         return nullptr;
     }
 
-    std::unique_ptr<Shape> createCube(glm::vec3 position) {
-        auto it = _meshCache.find("cube");
-        if (it != _meshCache.end()) {
-            auto newShape = std::make_unique<Shape>(it->second);
-            newShape->transform.translate(position);
-            return newShape;
+    // std::unique_ptr<Shape> createCube(glm::vec3 position) {
+    //     auto it = _meshCache.find("cube");
+    //     if (it != _meshCache.end()) {
+    //         auto newShape = std::make_unique<Shape>(&it->second);
+    //         newShape->transform.translate(position);
+    //         return newShape;
+    //     }
+    //     return nullptr;
+    // }
+
+    // Clean up GPU resources on destruction
+    ~ShapeFactory() {
+        for (auto &pair : _meshCache) {
+            glDeleteVertexArrays(1, &pair.second.VAO);
+            glDeleteBuffers(1, &pair.second.VBO);
         }
-        return nullptr;
     }
 };
 

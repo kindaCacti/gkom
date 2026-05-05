@@ -6,5 +6,6 @@
 #define SCR_HEIGHT 600
 
 #define PLAYER_ASSET_NAME "teapot"
+#define EMITER_ASSET_NAME "cube"
 
 #endif

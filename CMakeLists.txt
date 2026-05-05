@@ -21,6 +21,7 @@ add_executable(gkom
     includes/glad/src/glad.c
     src/shapes/shape.h
     src/entities/player.cpp
+    src/entities/emiter.cpp
     src/defines.h
     src/shaders/utils.cpp
 )
