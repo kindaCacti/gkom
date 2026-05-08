@@ -11,14 +11,15 @@
 #include "../shapes/shape.h"
 #include "../shapes/shape_factory.h"
 #include "entity.h"
+#include "../hitbox/hitbox.h"
 
 
-class Bullet : public DrawableEntity {
+class Bullet : public HitboxedDrawableEntity {
   float _speed;
 
   public:
     Bullet(std::unique_ptr<Shape> &&shape, float speed)
-        : DrawableEntity(std::move(shape)), _speed(speed) {}
+        : HitboxedDrawableEntity(std::move(shape)), _speed(speed) {}
     Bullet& operator=(Bullet&& bullet) = default;
 
     void step(float delta_time) {

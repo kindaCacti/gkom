@@ -123,13 +123,23 @@ struct Game {
         shader_utils::set_blinn_phong_camera(*shader, cam.getMatrix());
     }
 
+    void check_collisions() {
+        for(auto bullet : bullets) {
+            if(bullet->intersects(&*player)) {
+                std::cout << "Player hit!" << static_cast<float>(glfwGetTime()) << std::endl;
+            }
+        }
+    }
+
     void drawEntities() {
+        player->drawHitbox(*shader);
         player->draw(*shader);
         for (auto& emiter : emmiters) {
             emiter->draw(*shader);
         }
         for (auto& bullet : bullets) {
-            bullet->draw(*shader);
+            bullet->drawHitbox(*shader);
+            // bullet->draw(*shader);
         }
         for (int i = 0; i < 3; ++i) {
             axes[i]->draw(shader->ID, glm::mat4(1.0f));

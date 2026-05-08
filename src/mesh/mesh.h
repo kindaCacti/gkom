@@ -19,6 +19,7 @@ struct Mesh {
     bool hasTexcoords = false;
     bool hasNormals = false;
     bool hasColors = false;
+    float minX = 0.f, maxX = 0.f, minY = 0.f, maxY = 0.f, minZ = 0.f, maxZ = 0.f;
 
     Mesh(const Mesh &) = delete;
     Mesh &operator=(const Mesh &) = delete;
@@ -26,7 +27,8 @@ struct Mesh {
     Mesh(Mesh &&other) noexcept
         : VAO(other.VAO), VBO(other.VBO), EBO(other.EBO),
           indexCount(other.indexCount), hasTexcoords(other.hasTexcoords),
-          hasNormals(other.hasNormals), hasColors(other.hasColors) {
+          hasNormals(other.hasNormals), hasColors(other.hasColors),
+          minX(other.minX), maxX(other.maxX), minY(other.minY), maxY(other.maxY), minZ(other.minZ), maxZ(other.maxZ) {
         other.VAO = 0;
         other.VBO = 0;
         other.EBO = 0;
@@ -57,6 +59,12 @@ struct Mesh {
         hasTexcoords = other.hasTexcoords;
         hasNormals = other.hasNormals;
         hasColors = other.hasColors;
+        minX = other.minX;
+        maxX = other.maxX;
+        minY = other.minY;
+        maxY = other.maxY;
+        minZ = other.minZ;
+        maxZ = other.maxZ;
 
         other.VAO = 0;
         other.VBO = 0;
@@ -70,10 +78,10 @@ struct Mesh {
 
     Mesh(const std::vector<float> &vertices,
          const std::vector<unsigned int> &indices, bool hasNormals,
-         bool hasColors, bool hasTexcoords)
+         bool hasColors, bool hasTexcoords, float minX, float maxX, float minY, float maxY, float minZ, float maxZ)
         : indexCount(static_cast<unsigned int>(indices.size())),
           hasNormals(hasNormals), hasColors(hasColors),
-          hasTexcoords(hasTexcoords) {
+          hasTexcoords(hasTexcoords), minX(minX), maxX(maxX), minY(minY), maxY(maxY), minZ(minZ), maxZ(maxZ) {
         glGenVertexArrays(1, &VAO);
         glGenBuffers(1, &VBO);
         glGenBuffers(1, &EBO);
@@ -139,6 +147,6 @@ struct Mesh {
             glDeleteBuffers(1, &EBO);
         }
     }
-};
 
+};
 #endif

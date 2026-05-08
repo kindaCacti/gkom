@@ -64,5 +64,12 @@ class Shape {
             glEnableVertexAttribArray(MeshAttrib::Color);
         }
     }
+
+    float minX() { return mesh.lock()->minX; }
+    float minY() { return mesh.lock()->minY; }
+    float minZ() { return mesh.lock()->minZ; }
+    float maxX() { return mesh.lock()->maxX; }
+    float maxY() { return mesh.lock()->maxY; }
+    float maxZ() { return mesh.lock()->maxZ; }
 };
 #endif

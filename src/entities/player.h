@@ -11,13 +11,15 @@
 #include "../shapes/shape.h"
 #include "../shapes/shape_factory.h"
 #include "entity.h"
+#include "../hitbox/hitbox.h"
 
-class Player : public DrawableEntity {
+class Player : public HitboxedDrawableEntity {
 
   public:
     Player() = default;
     Player(std::unique_ptr<Shape>&& shape)
-        : DrawableEntity(std::move(shape)){}
+        : HitboxedDrawableEntity(std::move(shape)) {}
+    // Player& operator=(Player&& player) = default;
 };
 
 #endif

@@ -42,7 +42,7 @@ class ShapeFactory {
         auto m = std::make_shared<Mesh>(
             std::vector<float>(vertices, vertices + 6 * 8),
             std::vector<unsigned int>(indices, indices + 36), false, true,
-            false);
+            false, -0.5f, 0.5f, -0.5f, 0.5f, -0.5f, 0.5f);
 
         _meshCache["cube"] = m;
     }

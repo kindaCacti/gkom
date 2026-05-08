@@ -192,6 +192,7 @@ load_obj(const std::string &path,
         vertexMap;
     vertexMap.reserve(2048);
 
+    float minX = 0.f, maxX = 0.f, minY = 0.f, maxY = 0.f, minZ = 0.f, maxZ = 0.f;
     for (const auto &raw : lines) {
         std::string_view sv(raw);
         sv = detail::ltrim(sv);
@@ -209,6 +210,12 @@ load_obj(const std::string &path,
             iss >> x >> y >> z;
             if (!iss.fail()) {
                 positions.push_back(Vec3{x, y, z});
+                minX = std::min(minX, x);
+                maxX = std::max(maxX, x);
+                minY = std::min(minY, y);
+                maxY = std::max(maxY, y);
+                minZ = std::min(minZ, z);
+                maxZ = std::max(maxZ, z);
             }
             continue;
         }
@@ -344,7 +351,7 @@ load_obj(const std::string &path,
         return std::nullopt;
     }
 
-    Mesh mesh(vertices, indices, hasNormals, hasColors, hasTexcoords);
+    Mesh mesh(vertices, indices, hasNormals, hasColors, hasTexcoords, minX, maxX, minY, maxY, minZ, maxZ);
     return mesh;
 }
 

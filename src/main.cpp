@@ -84,6 +84,7 @@ int main() {
             game.make_emmiters_shoot(currentFrameTime, BULLET_SPEED);
             game.move_bullets(deltaTime);
             game.remove_out_of_bounds_bullets();
+            game.check_collisions();
             game.drawEntities();
 
             glfwSwapBuffers(window);
