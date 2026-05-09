@@ -103,19 +103,19 @@ class HitboxedDrawableEntity : public DrawableEntity {
   public:
     HitboxedDrawableEntity(std::unique_ptr<Shape>&& shape, glm::vec3 hitbox_size) : DrawableEntity(std::move(shape)), _hitbox_size(hitbox_size) {}
     HitboxedDrawableEntity(std::unique_ptr<Shape>&& shape) : DrawableEntity(std::move(shape)), 
-        _hitbox_size(glm::vec3((_shape->maxX() - _shape->minX()) / 2.f, (_shape->maxY() - _shape->minY()) / 2.f, (_shape->maxZ() - _shape->minZ()) / 2.f)) {}
+        _hitbox_size(glm::vec3((_shape->maxX() - _shape->minX()) / 2.f * _shape->transform.getScale().x, (_shape->maxY() - _shape->minY()) / 2.f * _shape->transform.getScale().y, (_shape->maxZ() - _shape->minZ()) / 2.f * _shape->transform.getScale().z)) {}
     HitboxedDrawableEntity(HitboxedDrawableEntity&&) = default;
 
     HitboxedDrawableEntity& operator=(HitboxedDrawableEntity&&) = default;
 
     ~HitboxedDrawableEntity() = default;
 
-    int bottom_x() { return _pos.x; }
-    int bottom_y() { return _pos.y; }
-    int bottom_z() { return _pos.z; }
-    int top_x(){ return _pos.x + _hitbox_size.x; }
-    int top_y() { return _pos.y + _hitbox_size.y; }
-    int top_z() { return _pos.z + _hitbox_size.z; }
+    float bottom_x() { return _pos.x - _hitbox_size.x;}
+    float bottom_y() { return _pos.y - _hitbox_size.y; }
+    float bottom_z() { return _pos.z - _hitbox_size.z; }
+    float top_x(){ return _pos.x + _hitbox_size.x; }
+    float top_y() { return _pos.y + _hitbox_size.y; }
+    float top_z() { return _pos.z + _hitbox_size.z; }
 
     bool x_intersects(HitboxedDrawableEntity* other) {
         return bottom_x() < other->top_x() and top_x() > other->bottom_x();
@@ -133,9 +133,9 @@ class HitboxedDrawableEntity : public DrawableEntity {
         return x_intersects(other) and y_intersects(other) and z_intersects(other);
     }
 
-    virtual void drawHitbox(Shader &shader) const {
+    virtual void drawHitbox(Shader &shader) {
         glm::mat4 T = glm::translate(glm::mat4(1.0f), _pos);
-        glm::mat4 S = glm::scale(glm::mat4(1.0f), _hitbox_size);
+        glm::mat4 S = glm::scale(glm::mat4(1.0f), _hitbox_size * 2.0f);
         glm::mat4 model = T * S;
         unsigned int modelLoc = glGetUniformLocation(shader.ID, "model");
         glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
