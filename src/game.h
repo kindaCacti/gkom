@@ -92,7 +92,7 @@ struct Game {
 
     void moveBullets(float delta_time) {
         for(auto bullet : bullets) {
-            bullet->step(delta_time);
+            bullet->step(delta_time, player->get_pos());
         }
     }
 
