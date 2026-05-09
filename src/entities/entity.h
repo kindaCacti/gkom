@@ -50,15 +50,15 @@ class Entity {
     virtual void scale(const float dx = 0.f, const float dy = 0.f,
                        const float dz = 0.f) {
         _scale.x += dx;
-        _scale.x += dy;
-        _scale.x += dz;
+        _scale.y += dy;
+        _scale.z += dz;
     }
 
     virtual void set_scale(const float x = 0.f, const float y = 0.f,
                            const float z = 0.f) {
         _scale.x = x;
-        _scale.x = y;
-        _scale.x = z;
+        _scale.y = y;
+        _scale.z = z;
     }
 
     virtual void set_scale(glm::vec3 &&scale) { _scale = std::move(scale); }
@@ -117,6 +117,111 @@ class HitboxedDrawableEntity : public DrawableEntity {
     float top_y() { return _pos.y + _hitbox_size.y; }
     float top_z() { return _pos.z + _hitbox_size.z; }
 
+
+    bool check_collision_sat(HitboxedDrawableEntity* other) {
+        auto matA = getHitboxTransformMatrix();
+        auto matB = other->getHitboxTransformMatrix();
+
+        glm::vec3 posA = glm::vec3(matA[3]);
+        glm::vec3 posB = glm::vec3(matB[3]);
+        glm::vec3 Delta = posB - posA;
+
+        // Use pure rotation axes (Normalized)
+        glm::vec3 A[3] = { 
+            glm::normalize(glm::vec3(matA[0])), 
+            glm::normalize(glm::vec3(matA[1])), 
+            glm::normalize(glm::vec3(matA[2])) 
+        };
+        glm::vec3 B[3] = { 
+            glm::normalize(glm::vec3(matB[0])), 
+            glm::normalize(glm::vec3(matB[1])), 
+            glm::normalize(glm::vec3(matB[2])) 
+        };
+
+        // Half-extents: 
+        // Since your matrix uses (_hitbox_size * 2.0f), 
+        // the length of the matrix columns is double the half-extent.
+        float eA[3] = { glm::length(glm::vec3(matA[0])) * 0.5f, 
+                        glm::length(glm::vec3(matA[1])) * 0.5f, 
+                        glm::length(glm::vec3(matA[2])) * 0.5f };
+        float eB[3] = { glm::length(glm::vec3(matB[0])) * 0.5f, 
+                        glm::length(glm::vec3(matB[1])) * 0.5f, 
+                        glm::length(glm::vec3(matB[2])) * 0.5f };
+
+        // Rotation matrix between A and B
+        float R[3][3], AbsR[3][3];
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                R[i][j] = glm::dot(A[i], B[j]);
+                AbsR[i][j] = glm::abs(R[i][j]) + 1e-9f;
+            }
+        }
+
+        float ra, rb;
+
+        // 1-3: Axes A
+        for (int i = 0; i < 3; i++) {
+            ra = eA[i];
+            rb = eB[0] * AbsR[i][0] + eB[1] * AbsR[i][1] + eB[2] * AbsR[i][2];
+            if (glm::abs(glm::dot(Delta, A[i])) > ra + rb) return false;
+        }
+
+        // 4-6: Axes B
+        for (int i = 0; i < 3; i++) {
+            ra = eA[0] * AbsR[0][i] + eA[1] * AbsR[1][i] + eA[2] * AbsR[2][i];
+            rb = eB[i];
+            if (glm::abs(glm::dot(Delta, B[i])) > ra + rb) return false;
+        }
+
+        // 7-15: Cross Products
+        // A0 x B0
+        ra = eA[1] * AbsR[2][0] + eA[2] * AbsR[1][0];
+        rb = eB[1] * AbsR[0][2] + eB[2] * AbsR[0][1];
+        if (glm::abs(glm::dot(Delta, A[2]) * R[1][0] - glm::dot(Delta, A[1]) * R[2][0]) > ra + rb) return false;
+
+        // A0 x B1
+        ra = eA[1] * AbsR[2][1] + eA[2] * AbsR[1][1];
+        rb = eB[0] * AbsR[0][2] + eB[2] * AbsR[0][0];
+        if (glm::abs(glm::dot(Delta, A[2]) * R[1][1] - glm::dot(Delta, A[1]) * R[2][1]) > ra + rb) return false;
+
+        // A0 x B2
+        ra = eA[1] * AbsR[2][2] + eA[2] * AbsR[1][2];
+        rb = eB[0] * AbsR[0][1] + eB[1] * AbsR[0][0];
+        if (glm::abs(glm::dot(Delta, A[2]) * R[1][2] - glm::dot(Delta, A[1]) * R[2][2]) > ra + rb) return false;
+
+        // A1 x B0
+        ra = eA[0] * AbsR[2][0] + eA[2] * AbsR[0][0];
+        rb = eB[1] * AbsR[1][2] + eB[2] * AbsR[1][1];
+        if (glm::abs(glm::dot(Delta, A[0]) * R[2][0] - glm::dot(Delta, A[2]) * R[0][0]) > ra + rb) return false;
+
+        // A1 x B1
+        ra = eA[0] * AbsR[2][1] + eA[2] * AbsR[0][1];
+        rb = eB[0] * AbsR[1][2] + eB[2] * AbsR[1][0];
+        if (glm::abs(glm::dot(Delta, A[0]) * R[2][1] - glm::dot(Delta, A[2]) * R[0][1]) > ra + rb) return false;
+
+        // A1 x B2
+        ra = eA[0] * AbsR[2][2] + eA[2] * AbsR[0][2];
+        rb = eB[0] * AbsR[1][1] + eB[1] * AbsR[1][0];
+        if (glm::abs(glm::dot(Delta, A[0]) * R[2][2] - glm::dot(Delta, A[2]) * R[0][2]) > ra + rb) return false;
+
+        // A2 x B0
+        ra = eA[0] * AbsR[1][0] + eA[1] * AbsR[0][0];
+        rb = eB[1] * AbsR[2][2] + eB[2] * AbsR[2][1];
+        if (glm::abs(glm::dot(Delta, A[1]) * R[0][0] - glm::dot(Delta, A[0]) * R[1][0]) > ra + rb) return false;
+
+        // A2 x B1
+        ra = eA[0] * AbsR[1][1] + eA[1] * AbsR[0][1];
+        rb = eB[0] * AbsR[2][2] + eB[2] * AbsR[2][0];
+        if (glm::abs(glm::dot(Delta, A[1]) * R[0][1] - glm::dot(Delta, A[0]) * R[1][1]) > ra + rb) return false;
+
+        // A2 x B2
+        ra = eA[0] * AbsR[1][2] + eA[1] * AbsR[0][2];
+        rb = eB[0] * AbsR[2][1] + eB[1] * AbsR[2][0];
+        if (glm::abs(glm::dot(Delta, A[1]) * R[0][2] - glm::dot(Delta, A[0]) * R[1][2]) > ra + rb) return false;
+
+        return true;
+    }
+
     bool x_intersects(HitboxedDrawableEntity* other) {
         return bottom_x() < other->top_x() and top_x() > other->bottom_x();
     }
@@ -130,13 +235,18 @@ class HitboxedDrawableEntity : public DrawableEntity {
     }
 
     bool intersects(HitboxedDrawableEntity* other) {
-        return x_intersects(other) and y_intersects(other) and z_intersects(other);
+        return check_collision_sat(other);
+    }
+
+    glm::mat4 getHitboxTransformMatrix() const {
+        glm::mat4 T = glm::translate(glm::mat4(1.0f), _pos);
+        glm::mat4 R = getEulerRotationMatrix(_rot);
+        glm::mat4 S = glm::scale(glm::mat4(1.0f), _hitbox_size * 2.0f);
+        return T * R * S;
     }
 
     virtual void drawHitbox(Shader &shader) {
-        glm::mat4 T = glm::translate(glm::mat4(1.0f), _pos);
-        glm::mat4 S = glm::scale(glm::mat4(1.0f), _hitbox_size * 2.0f);
-        glm::mat4 model = T * S;
+        glm::mat4 model = getHitboxTransformMatrix();
         unsigned int modelLoc = glGetUniformLocation(shader.ID, "model");
         glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
