@@ -11,7 +11,6 @@
 #include "../shapes/shape.h"
 #include "../shapes/shape_factory.h"
 #include "entity.h"
-#include "../hitbox/hitbox.h"
 
 
 class Bullet : public HitboxedDrawableEntity {
