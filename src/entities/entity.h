@@ -118,7 +118,7 @@ class HitboxedDrawableEntity : public DrawableEntity {
     float top_z() { return _pos.z + _hitbox_size.z; }
 
 
-    bool check_collision_sat(HitboxedDrawableEntity* other) {
+    bool check_3D_collision(HitboxedDrawableEntity* other) {
         auto matA = getHitboxTransformMatrix();
         auto matB = other->getHitboxTransformMatrix();
 
@@ -235,7 +235,7 @@ class HitboxedDrawableEntity : public DrawableEntity {
     }
 
     bool intersects(HitboxedDrawableEntity* other) {
-        return check_collision_sat(other);
+        return check_3D_collision(other);
     }
 
     glm::mat4 getHitboxTransformMatrix() const {

@@ -28,12 +28,16 @@ class Emmiter : public DrawableEntity {
             return nullptr;
         }
 
-        return shoot(std::move(shape_factory.createShape(BULLET_ASSET_NAME)), current_time, speed);
+        auto bullet_asset = shape_factory.createShape(BULLET_ASSET_NAME);
+        bullet_asset->transform.scale(glm::vec3(0.2f));
+        bullet_asset->transform.translate(glm::vec3(0.f, 0.f, 0.f));
+        bullet_asset->transform.rotate(180.f, glm::vec3(0.f, 0.f, 1.f));
+        return shoot(std::move(bullet_asset), current_time, speed);
     }
 
     std::shared_ptr<Bullet> shoot(std::unique_ptr<Shape>&& bullet_shape, float current_time, float speed) {
         _last_shot_time = current_time;
-        std::shared_ptr<Bullet> new_bullet = std::make_shared<Bullet>(std::move(bullet_shape), speed);
+        std::shared_ptr<Bullet> new_bullet = std::make_shared<Bullet>(std::move(bullet_shape), speed, _rot);
         new_bullet->set_position(_pos);
         new_bullet->set_rotation(_rot);
         new_bullet->set_scale(_scale);

@@ -53,9 +53,8 @@ struct Game {
 
     void spawnEmiter(float current_time, float time_between_shots) {
         auto emmiter_asset = shapeFactory.createShape(EMMITER_ASSET_NAME);
-        emmiter_asset->transform.scale(glm::vec3(0.4f));
+        emmiter_asset->transform.scale(glm::vec3(1.0f));
         emmiter_asset->transform.translate(glm::vec3(0.f, 0.f, 0.f));
-        emmiter_asset->transform.rotate(180.f, glm::vec3(0.f, 0.f, 1.f));
         if (auto noise = textureFactory.createTexture("noise").lock()) {
             emmiter_asset->bindDiffuseTexture(noise);
         }
@@ -65,6 +64,7 @@ struct Game {
     void make_emmiters_shoot(float current_time, float speed) {
         for(auto emmiter : emmiters) {
             auto bullet_pointer = emmiter->shoot_if_time(shapeFactory, current_time, speed);
+            emmiter->rotate(0.0f, 0.0f, 10.0f);
             if(bullet_pointer) {
                 bullets.push_back(bullet_pointer);
             }
@@ -82,7 +82,7 @@ struct Game {
         while(it != bullets.end()) {
             float xpos = (*it)->get_pos().x;
             float zpos = (*it)->get_pos().z;
-            if(xpos < AREA_MIN_X or xpos > AREA_MAX_X or zpos < AREA_MIN_Z or zpos > AREA_MAX_Z) {
+            if(sqrt(xpos * xpos + zpos * zpos) > AREA_RADIUS) {
                 it = bullets.erase(it);
             } else {
                 ++it;
@@ -96,7 +96,7 @@ struct Game {
         BlinnPhongParameters bpp;
         shader_utils::set_blinn_phong_uniforms(*shader, bpp);
         spawnPlayer();
-        spawnEmiter(current_time, 1.0f);
+        spawnEmiter(current_time, 0.01f);
         player->set_position(2.f, 0.f, 0.f);
         cam.setAspectRatio(static_cast<float>(SCR_WIDTH) /
                            static_cast<float>(SCR_HEIGHT));
@@ -138,8 +138,8 @@ struct Game {
             emiter->draw(*shader);
         }
         for (auto& bullet : bullets) {
-            bullet->drawHitbox(*shader);
-            // bullet->draw(*shader);
+            // bullet->drawHitbox(*shader);
+            bullet->draw(*shader);
         }
         for (int i = 0; i < 3; ++i) {
             axes[i]->draw(shader->ID, glm::mat4(1.0f));
@@ -154,6 +154,10 @@ struct Game {
 
     void onMouseMove(GLFWwindow *window, double xpos, double ypos) {
         cam.onMouseMove(xpos, ypos);
+    }
+
+    void printStats(float delta_time = 1.f) {
+        std::cout << "Number of bullets: " << bullets.size() << " (FPS: " << 1.0f / delta_time << ")" << "\r" << std::flush;
     }
 
 

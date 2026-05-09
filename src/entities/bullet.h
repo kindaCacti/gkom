@@ -15,14 +15,19 @@
 
 class Bullet : public HitboxedDrawableEntity {
   float _speed;
+  glm::vec3 _direction;
 
   public:
-    Bullet(std::unique_ptr<Shape> &&shape, float speed)
-        : HitboxedDrawableEntity(std::move(shape)), _speed(speed) {}
+    Bullet(std::unique_ptr<Shape> &&shape, float speed, glm::vec3 direction)
+        : HitboxedDrawableEntity(std::move(shape)), _speed(speed), _direction(direction) {}
     Bullet& operator=(Bullet&& bullet) = default;
 
     void step(float delta_time) {
-      _pos.x += delta_time * _speed;
+      glm::vec3 direction = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f) * getEulerRotationMatrix(_direction);
+      direction = glm::normalize(direction);
+      _pos.x += delta_time * _speed * direction.x;
+      _pos.y += delta_time * _speed * direction.y;
+      _pos.z += delta_time * _speed * direction.z;
     }
 };
 

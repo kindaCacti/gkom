@@ -86,6 +86,7 @@ int main() {
             game.remove_out_of_bounds_bullets();
             game.check_collisions();
             game.drawEntities();
+            game.printStats(deltaTime);
 
             glfwSwapBuffers(window);
             glfwPollEvents();
