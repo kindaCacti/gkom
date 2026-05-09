@@ -25,11 +25,11 @@ class Entity {
         _pos.z += dz;
     }
 
-    virtual void set_position(const float x = 0.f, const float y = 0.f,
+    virtual void setPosition(const float x = 0.f, const float y = 0.f,
                               const float z = 0.f) {
-        _pos.x += x;
-        _pos.y += y;
-        _pos.z += z;
+        _pos.x = x;
+        _pos.y = y;
+        _pos.z = z;
     }
 
     virtual void rotate(const float dx_rot = 0.0f, const float dy_rot = 0.0f,
@@ -39,7 +39,7 @@ class Entity {
         _rot.z += dz_rot;
     }
 
-    virtual void set_rotation(const float x_rot = 0.0f,
+    virtual void setRotation(const float x_rot = 0.0f,
                               const float y_rot = 0.0f,
                               const float z_rot = 0.0f) {
         _rot.x = x_rot;
@@ -54,19 +54,22 @@ class Entity {
         _scale.z += dz;
     }
 
-    virtual void set_scale(const float x = 0.f, const float y = 0.f,
+    virtual void setScale(const float x = 0.f, const float y = 0.f,
                            const float z = 0.f) {
         _scale.x = x;
         _scale.y = y;
         _scale.z = z;
     }
 
-    virtual void set_scale(glm::vec3 &&scale) { _scale = std::move(scale); }
-    virtual void set_position(glm::vec3 &&pos) { _pos = std::move(pos); }
-    virtual void set_rotation(glm::vec3 &&rot) { _rot = std::move(rot); }
-    virtual void set_scale(glm::vec3 &scale) { _scale = glm::vec3(scale); }
-    virtual void set_position(glm::vec3 &pos) { _pos = glm::vec3(pos); }
-    virtual void set_rotation(glm::vec3 &rot) { _rot = glm::vec3(rot); }
+    virtual void setScale(glm::vec3 &&scale) { _scale = std::move(scale); }
+    virtual void setPosition(glm::vec3 &&pos) { _pos = std::move(pos); }
+    virtual void setRotation(glm::vec3 &&rot) { _rot = std::move(rot); }
+    virtual void setScale(glm::vec3 &scale) { _scale = glm::vec3(scale); }
+    virtual void setPosition(glm::vec3 &pos) { _pos = glm::vec3(pos); }
+    virtual void setRotation(glm::vec3 &rot) { _rot = glm::vec3(rot); }
+    virtual void rotate(glm::vec3 &delta_rot) { _rot += delta_rot; }
+    virtual void move(glm::vec3 &delta_pos) { _pos += delta_pos; }
+    virtual void scale(glm::vec3 &delta_scale) { _scale += delta_scale; }
 
 
     virtual glm::vec3 get_pos() const { return _pos; }

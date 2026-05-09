@@ -51,7 +51,7 @@ struct Game {
         player = std::make_shared<Player>(Player(std::move(player_asset)));
     }
 
-    void spawnEmiter(float current_time, float time_between_shots) {
+    void spawnEmiter(float current_time, float time_between_shots, glm::vec3 position = glm::vec3(0.f), glm::vec3 rotation = glm::vec3(0.f)) {
         auto emmiter_asset = shapeFactory.createShape(EMMITER_ASSET_NAME);
         emmiter_asset->transform.scale(glm::vec3(1.0f));
         emmiter_asset->transform.translate(glm::vec3(0.f, 0.f, 0.f));
@@ -59,30 +59,49 @@ struct Game {
             emmiter_asset->bindDiffuseTexture(noise);
         }
         emmiters.push_back(std::make_shared<Emmiter>(std::move(emmiter_asset), current_time, time_between_shots));
+        emmiters.back()->setPosition(position);
+        emmiters.back()->setRotation(rotation);
     }
 
-    void make_emmiters_shoot(float current_time, float speed) {
+    void spawnEmmiterRandom() {
+        float angle = static_cast<float>(rand()) / RAND_MAX * 2.0f * 3.14159265f;
+        float radius = AREA_RADIUS * 0.8f; // Spawn within 80% of the area radius
+        glm::vec3 position = glm::vec3(cos(angle) * radius, sin(angle) * radius, 0.f);
+        glm::vec3 rotation = glm::vec3(0.f, 0.f, - (glm::degrees(angle) + 180.0f + getRandomFloatBetween(-10.f, 10.f))); // Rotate to face the center
+        spawnEmiter(static_cast<float>(glfwGetTime()), 0.5f, position, rotation);
+    }
+
+    void snapPlayerIntoArea() {
+        float xpos = player->get_pos().x;
+        float ypos = player->get_pos().y;
+        float distance_from_center = sqrt(xpos * xpos + ypos * ypos);
+        if (distance_from_center > PLAYER_AREA_RADIUS) {
+            float scale = PLAYER_AREA_RADIUS / distance_from_center;
+            player->setPosition(xpos * scale, ypos * scale, player->get_pos().z);
+        }
+    }
+
+    void shootIfTime(float current_time, float speed) {
         for(auto emmiter : emmiters) {
-            auto bullet_pointer = emmiter->shoot_if_time(shapeFactory, current_time, speed);
-            emmiter->rotate(0.0f, 0.0f, 10.0f);
+            auto bullet_pointer = emmiter->shootIfTime(shapeFactory, current_time, speed);
             if(bullet_pointer) {
                 bullets.push_back(bullet_pointer);
             }
         }
     }
 
-    void move_bullets(float delta_time) {
+    void moveBullets(float delta_time) {
         for(auto bullet : bullets) {
             bullet->step(delta_time);
         }
     }
 
-    void remove_out_of_bounds_bullets() {
+    void removeOutOfBoundsBullets() {
         auto it = bullets.begin();
         while(it != bullets.end()) {
             float xpos = (*it)->get_pos().x;
-            float zpos = (*it)->get_pos().z;
-            if(sqrt(xpos * xpos + zpos * zpos) > AREA_RADIUS) {
+            float ypos = (*it)->get_pos().y;
+            if(sqrt(xpos * xpos + ypos * ypos) > AREA_RADIUS) {
                 it = bullets.erase(it);
             } else {
                 ++it;
@@ -96,8 +115,11 @@ struct Game {
         BlinnPhongParameters bpp;
         shader_utils::set_blinn_phong_uniforms(*shader, bpp);
         spawnPlayer();
-        spawnEmiter(current_time, 0.01f);
-        player->set_position(2.f, 0.f, 0.f);
+        // spawnEmiter(current_time, 0.01f);
+        for(int i = 0; i < 5; ++i) {
+            spawnEmmiterRandom();
+        }
+        player->setPosition(2.f, 0.f, 0.f);
         cam.setAspectRatio(static_cast<float>(SCR_WIDTH) /
                            static_cast<float>(SCR_HEIGHT));
         cam.setPosition(glm::vec3(-10.f, -10.f, 15.f));
@@ -117,13 +139,13 @@ struct Game {
 
     void updateCamera() {
         cam.orbitAround(player->get_pos());
-        player->set_rotation(0.f, 0.f, cam.getYaw());
+        player->setRotation(0.f, 0.f, cam.getYaw());
         shader->use();
         shader_utils::set_blinn_phong_view_pos(*shader, cam.getPosition());
         shader_utils::set_blinn_phong_camera(*shader, cam.getMatrix());
     }
 
-    void check_collisions() {
+    void checkPlayerCollision() {
         for(auto bullet : bullets) {
             if(bullet->intersects(&*player)) {
                 std::cout << "Player hit!" << static_cast<float>(glfwGetTime()) << std::endl;

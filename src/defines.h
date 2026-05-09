@@ -7,7 +7,7 @@
 
 #define BULLET_SPEED 10.0f
 
-#define AREA_RADIUS 100.0f
+#define AREA_RADIUS 50.0f
 #define PLAYER_AREA_RADIUS 10.0f
 
 #define PLAYER_ASSET_NAME "teapot"

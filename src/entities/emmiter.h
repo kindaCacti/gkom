@@ -23,7 +23,7 @@ class Emmiter : public DrawableEntity {
     Emmiter(std::unique_ptr<Shape> &&shape, float current_time, float time_between_shots)
         : DrawableEntity(std::move(shape)), _last_shot_time(current_time), _time_between_shots(time_between_shots) {}
 
-    std::shared_ptr<Bullet> shoot_if_time(ShapeFactory& shape_factory, float current_time, float speed) {
+    std::shared_ptr<Bullet> shootIfTime(ShapeFactory& shape_factory, float current_time, float speed) {
         if(current_time - _last_shot_time < _time_between_shots) {
             return nullptr;
         }
@@ -38,9 +38,9 @@ class Emmiter : public DrawableEntity {
     std::shared_ptr<Bullet> shoot(std::unique_ptr<Shape>&& bullet_shape, float current_time, float speed) {
         _last_shot_time = current_time;
         std::shared_ptr<Bullet> new_bullet = std::make_shared<Bullet>(std::move(bullet_shape), speed, _rot);
-        new_bullet->set_position(_pos);
-        new_bullet->set_rotation(_rot);
-        new_bullet->set_scale(_scale);
+        new_bullet->setPosition(_pos);
+        new_bullet->setRotation(_rot);
+        new_bullet->setScale(_scale);
         return new_bullet;
     }
 };

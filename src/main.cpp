@@ -77,14 +77,18 @@ int main() {
             float deltaTime = currentFrameTime - lastFrameTime;
             lastFrameTime = currentFrameTime;
             processInput(window, game, deltaTime);
+            game.snapPlayerIntoArea();
+            while(currentFrameTime / game.emmiters.size() > 5.f) {
+                game.spawnEmmiterRandom();
+            }
             glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
             game.updateCamera();
-            game.make_emmiters_shoot(currentFrameTime, BULLET_SPEED);
-            game.move_bullets(deltaTime);
-            game.remove_out_of_bounds_bullets();
-            game.check_collisions();
+            game.shootIfTime(currentFrameTime, BULLET_SPEED);
+            game.moveBullets(deltaTime);
+            game.removeOutOfBoundsBullets();
+            game.checkPlayerCollision();
             game.drawEntities();
             game.printStats(deltaTime);
 
