@@ -10,6 +10,8 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
         -fsanitize=address      # AddressSanitizer
         -fsanitize=undefined    # UndefinedBehaviorSanitizer
         -fno-omit-frame-pointer # Better stack traces
+        -Wall
+        -Wpedantic
     )
     add_link_options(
         -fsanitize=address 
@@ -23,12 +25,12 @@ include_directories(includes/glad/include)
 
 add_executable(gkom 
     src/main.cpp
+    src/game.cpp
     src/input.cpp
     includes/glad/src/glad.c
-    src/shapes/shape.h
     src/entities/player.cpp
+    src/entities/bullet.cpp
     src/entities/emmiter.cpp
-    src/defines.h
     src/shaders/utils.cpp
 )
 

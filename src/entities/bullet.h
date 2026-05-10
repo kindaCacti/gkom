@@ -23,18 +23,8 @@ class Bullet : public HitboxedDrawableEntity {
         : HitboxedDrawableEntity(std::move(shape)), _speed(speed), _direction(direction) {}
     Bullet& operator=(Bullet&& bullet) = default;
 
-    void rotateTowards(float delta_time, glm::vec3 target) {
-        return;
-    }
-
-    void step(float delta_time, glm::vec3 target) {
-        rotateTowards(delta_time, target);
-        glm::vec3 direction = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f) * getEulerRotationMatrix(_direction);
-        direction = glm::normalize(direction);
-        _pos.x += delta_time * _speed * direction.x;
-        _pos.y += delta_time * _speed * direction.y;
-        _pos.z += delta_time * _speed * direction.z;
-    }
+    void rotateTowardsTarget(float delta_time, glm::vec3 target);
+    void step(float delta_time, glm::vec3 target);
 };
 
 

@@ -80,8 +80,8 @@ struct Mesh {
          const std::vector<unsigned int> &indices, bool hasNormals,
          bool hasColors, bool hasTexcoords, float minX, float maxX, float minY, float maxY, float minZ, float maxZ)
         : indexCount(static_cast<unsigned int>(indices.size())),
-          hasNormals(hasNormals), hasColors(hasColors),
-          hasTexcoords(hasTexcoords), minX(minX), maxX(maxX), minY(minY), maxY(maxY), minZ(minZ), maxZ(maxZ) {
+          hasTexcoords(hasTexcoords), hasNormals(hasNormals), hasColors(hasColors),
+           minX(minX), maxX(maxX), minY(minY), maxY(maxY), minZ(minZ), maxZ(maxZ) {
         glGenVertexArrays(1, &VAO);
         glGenBuffers(1, &VBO);
         glGenBuffers(1, &EBO);

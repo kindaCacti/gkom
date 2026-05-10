@@ -1,5 +1,4 @@
 #include <glad/glad.h>
-
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -67,30 +66,20 @@ int main() {
                 }
             });
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-        game.loadAssets();
-        game.setupDefaultScene(static_cast<float>(glfwGetTime()));
+        game.setupDefaultScene();
 
         glEnable(GL_DEPTH_TEST);
-        float lastFrameTime = static_cast<float>(glfwGetTime());
         while (!glfwWindowShouldClose(window)) {
-            float currentFrameTime = static_cast<float>(glfwGetTime());
-            float deltaTime = currentFrameTime - lastFrameTime;
-            lastFrameTime = currentFrameTime;
-            processInput(window, game, deltaTime);
-            game.snapPlayerIntoArea();
-            while(currentFrameTime / game.emmiters.size() > 5.f) {
-                game.spawnEmmiterRandom();
-            }
-            glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-            game.updateCamera();
-            game.shootIfTime(currentFrameTime, BULLET_SPEED);
-            game.moveBullets(deltaTime);
-            game.removeOutOfBoundsBullets();
-            game.checkPlayerCollision();
-            game.drawEntities();
-            game.printStats(deltaTime);
+            game.doFramePreprocessing();
+            processInput(window, game, game.deltaTime);
+            game.updateScene();
+
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+
+            game.drawScene();
+            game.printStats();
 
             glfwSwapBuffers(window);
             glfwPollEvents();

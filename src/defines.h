@@ -9,7 +9,7 @@
 
 #define AREA_RADIUS 50.0f
 #define PLAYER_AREA_RADIUS 10.0f
-#define BULLET_ROTATION_FACTOR 0.1f
+#define MAX_ANGLE_CHANGE_PER_SECOND 10.0f
 
 #define PLAYER_ASSET_NAME "teapot"
 #define EMMITER_ASSET_NAME "cube"
