@@ -11,7 +11,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
         -fsanitize=undefined    # UndefinedBehaviorSanitizer
         -fno-omit-frame-pointer # Better stack traces
         -Wall
-        -Wpedantic
+        -Werror
     )
     add_link_options(
         -fsanitize=address 
