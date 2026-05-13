@@ -7,7 +7,7 @@
 
 #define BULLET_SPEED 10.0f
 
-#define AREA_RADIUS 50.0f
+#define AREA_RADIUS_SQ 2500.0f
 #define PLAYER_AREA_RADIUS 10.0f
 #define MAX_ANGLE_CHANGE_PER_SECOND 10.0f
 

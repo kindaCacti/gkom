@@ -21,12 +21,13 @@
 #include "shaders/utils.h"
 #include "textures/texture_factory.h"
 #include "textures/texture.h"
+#include "./bullet_buffer.h"
 
 struct Game {
     Camera cam;
     std::shared_ptr<Player> player;
     std::list<std::shared_ptr<emiter>> emiters;
-    std::list<std::shared_ptr<Bullet>> bullets;
+    BulletBuffer bulletBuffer;
     ShapeFactory shapeFactory;
     TextureFactory textureFactory;
     std::shared_ptr<Shader> shader;
@@ -49,8 +50,7 @@ struct Game {
     void spawnRandomemiter();
     void snapPlayerIntoArea();
     void shootIfTime(float speed);
-    void moveBullets();
-    void removeOutOfBoundsBullets();
+    void moveRemoveBullets();
     void setupDefaultScene();
     void updateCamera();
     void checkPlayerCollision();

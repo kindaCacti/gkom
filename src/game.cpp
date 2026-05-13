@@ -19,12 +19,12 @@
 
 void Game::updateScene() {
     snapPlayerIntoArea();
-    removeOutOfBoundsBullets();
+    // removeOutOfBoundsBullets();
     while (currentFrameTime / emiters.size() > 5.f) {
         spawnRandomemiter();
     }
     shootIfTime(BULLET_SPEED);
-    moveBullets();
+    moveRemoveBullets();
     checkPlayerCollision();
     updateCamera();
 }
@@ -78,7 +78,8 @@ void Game::spawnEmiter(float time_between_shots, glm::vec3 position,
 
 void Game::spawnRandomemiter() {
     float angle = static_cast<float>(rand()) / RAND_MAX * 2.0f * 3.14159265f;
-    float radius = AREA_RADIUS * 0.8f; // Spawn within 80% of the area radius
+    float radius =
+        std::sqrt(AREA_RADIUS_SQ) * 0.8f; // Spawn within 80% of the area radius
     glm::vec3 position =
         glm::vec3(cos(angle) * radius, sin(angle) * radius, 0.f);
     glm::vec3 rotation = glm::vec3(
@@ -100,32 +101,26 @@ void Game::snapPlayerIntoArea() {
 
 void Game::shootIfTime(float speed) {
     for (auto emiter : emiters) {
-        auto bullet_pointer =
-            emiter->shootIfTime(shapeFactory, currentFrameTime, speed);
-        if (bullet_pointer) {
-            bullets.push_back(bullet_pointer);
-        }
+        emiter->shootIfTime(shapeFactory, currentFrameTime, speed,
+                            bulletBuffer);
     }
 }
 
-void Game::moveBullets() {
-    for (auto bullet : bullets) {
-        bullet->step(deltaTime, player->get_pos());
-    }
+void Game::moveRemoveBullets() {
+    bulletBuffer.moveRemoveActiveElements(deltaTime, player->get_pos());
 }
 
-void Game::removeOutOfBoundsBullets() {
-    auto it = bullets.begin();
-    while (it != bullets.end()) {
-        float xpos = (*it)->get_pos().x;
-        float ypos = (*it)->get_pos().y;
-        if (sqrt(xpos * xpos + ypos * ypos) > AREA_RADIUS) {
-            it = bullets.erase(it);
-        } else {
-            ++it;
-        }
-    }
-}
+// void Game::removeOutOfBoundsBullets() {
+//     auto it = bullets.begin();
+//     while (it != bullets.end()) {
+//         float xpos = (*it)->get_pos().x;
+//         float ypos = (*it)->get_pos().y;
+//         if (sqrt(xpos * xpos + ypos * ypos) > AREA_RADIUS) {
+//             (*it)->setShouldBeDrawn(false);
+//         }
+//         ++it;
+//     }
+// }
 
 void Game::setupDefaultScene() {
     loadShaders();
@@ -163,11 +158,9 @@ void Game::updateCamera() {
 }
 
 void Game::checkPlayerCollision() {
-    for (auto bullet : bullets) {
-        if (bullet->intersects(&*player)) {
-            std::cout << "Player hit!" << static_cast<float>(glfwGetTime())
-                      << std::endl;
-        }
+    if (bulletBuffer.checkActiveBulletCollision(player.get())) {
+        std::cout << "Player hit!" << static_cast<float>(glfwGetTime())
+                  << std::endl;
     }
 }
 
@@ -177,17 +170,14 @@ void Game::drawEntities() {
     for (auto &emiter : emiters) {
         emiter->draw(*shader);
     }
-    for (auto &bullet : bullets) {
-        // bullet->drawHitbox(*shader);
-        bullet->draw(*shader);
-    }
+    bulletBuffer.drawActiveElements(*shader);
     for (int i = 0; i < 3; ++i) {
         axes[i]->draw(shader->ID, glm::mat4(1.0f));
     }
 }
 
 void Game::printStats() {
-    std::cout << "Number of bullets: " << bullets.size()
+    std::cout << "Number of bullets: " << bulletBuffer.activeElementCount()
               << " (FPS: " << 1.0f / (deltaTime + 0.0001f) << ")" << "\r"
               << std::flush;
 }

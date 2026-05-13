@@ -26,7 +26,7 @@ class Entity {
     }
 
     virtual void setPosition(const float x = 0.f, const float y = 0.f,
-                              const float z = 0.f) {
+                             const float z = 0.f) {
         _pos.x = x;
         _pos.y = y;
         _pos.z = z;
@@ -39,9 +39,8 @@ class Entity {
         _rot.z += dz_rot;
     }
 
-    virtual void setRotation(const float x_rot = 0.0f,
-                              const float y_rot = 0.0f,
-                              const float z_rot = 0.0f) {
+    virtual void setRotation(const float x_rot = 0.0f, const float y_rot = 0.0f,
+                             const float z_rot = 0.0f) {
         _rot.x = x_rot;
         _rot.y = y_rot;
         _rot.z = z_rot;
@@ -55,7 +54,7 @@ class Entity {
     }
 
     virtual void setScale(const float x = 0.f, const float y = 0.f,
-                           const float z = 0.f) {
+                          const float z = 0.f) {
         _scale.x = x;
         _scale.y = y;
         _scale.z = z;
@@ -71,7 +70,6 @@ class Entity {
     virtual void move(glm::vec3 &delta_pos) { _pos += delta_pos; }
     virtual void scale(glm::vec3 &delta_scale) { _scale += delta_scale; }
 
-
     virtual glm::vec3 get_pos() const { return _pos; }
 };
 
@@ -80,14 +78,15 @@ class DrawableEntity : public Entity {
     std::unique_ptr<Shape> _shape;
 
   public:
-    DrawableEntity(std::unique_ptr<Shape>&& shape) : Entity(), _shape(std::move(shape)) {}
-    DrawableEntity(DrawableEntity&&) = default;
+    DrawableEntity(std::unique_ptr<Shape> &&shape)
+        : Entity(), _shape(std::move(shape)) {}
+    DrawableEntity(DrawableEntity &&) = default;
 
-    DrawableEntity& operator=(DrawableEntity&&) = default;
+    DrawableEntity &operator=(DrawableEntity &&) = default;
 
-
-    virtual void draw(Shader &shader) const {
+    virtual bool draw(Shader &shader) const {
         _shape->draw(shader.ID, getTransformMatrix());
+        return true;
     }
 
     virtual glm::mat4 getTransformMatrix() const {
@@ -97,31 +96,41 @@ class DrawableEntity : public Entity {
         return T * R * S;
     }
 
+    void setShape(std::unique_ptr<Shape> &&shape) { _shape = std::move(shape); }
+
     virtual ~DrawableEntity() = default;
 };
 
 class HitboxedDrawableEntity : public DrawableEntity {
   protected:
     glm::vec3 _hitbox_size;
-  public:
-    HitboxedDrawableEntity(std::unique_ptr<Shape>&& shape, glm::vec3 hitbox_size) : DrawableEntity(std::move(shape)), _hitbox_size(hitbox_size) {}
-    HitboxedDrawableEntity(std::unique_ptr<Shape>&& shape) : DrawableEntity(std::move(shape)), 
-        _hitbox_size(glm::vec3((_shape->maxX() - _shape->minX()) / 2.f * _shape->transform.getScale().x, (_shape->maxY() - _shape->minY()) / 2.f * _shape->transform.getScale().y, (_shape->maxZ() - _shape->minZ()) / 2.f * _shape->transform.getScale().z)) {}
-    HitboxedDrawableEntity(HitboxedDrawableEntity&&) = default;
 
-    HitboxedDrawableEntity& operator=(HitboxedDrawableEntity&&) = default;
+  public:
+    HitboxedDrawableEntity(std::unique_ptr<Shape> &&shape,
+                           glm::vec3 hitbox_size)
+        : DrawableEntity(std::move(shape)), _hitbox_size(hitbox_size) {}
+    HitboxedDrawableEntity(std::unique_ptr<Shape> &&shape)
+        : DrawableEntity(std::move(shape)),
+          _hitbox_size(glm::vec3((_shape->maxX() - _shape->minX()) / 2.f *
+                                     _shape->transform.getScale().x,
+                                 (_shape->maxY() - _shape->minY()) / 2.f *
+                                     _shape->transform.getScale().y,
+                                 (_shape->maxZ() - _shape->minZ()) / 2.f *
+                                     _shape->transform.getScale().z)) {}
+    HitboxedDrawableEntity(HitboxedDrawableEntity &&) = default;
+
+    HitboxedDrawableEntity &operator=(HitboxedDrawableEntity &&) = default;
 
     ~HitboxedDrawableEntity() = default;
 
-    float bottom_x() { return _pos.x - _hitbox_size.x;}
+    float bottom_x() { return _pos.x - _hitbox_size.x; }
     float bottom_y() { return _pos.y - _hitbox_size.y; }
     float bottom_z() { return _pos.z - _hitbox_size.z; }
-    float top_x(){ return _pos.x + _hitbox_size.x; }
+    float top_x() { return _pos.x + _hitbox_size.x; }
     float top_y() { return _pos.y + _hitbox_size.y; }
     float top_z() { return _pos.z + _hitbox_size.z; }
 
-
-    bool check_3D_collision(HitboxedDrawableEntity* other) {
+    bool check_3D_collision(HitboxedDrawableEntity *other) {
         auto matA = getHitboxTransformMatrix();
         auto matB = other->getHitboxTransformMatrix();
 
@@ -130,26 +139,22 @@ class HitboxedDrawableEntity : public DrawableEntity {
         glm::vec3 Delta = posB - posA;
 
         // Use pure rotation axes (Normalized)
-        glm::vec3 A[3] = { 
-            glm::normalize(glm::vec3(matA[0])), 
-            glm::normalize(glm::vec3(matA[1])), 
-            glm::normalize(glm::vec3(matA[2])) 
-        };
-        glm::vec3 B[3] = { 
-            glm::normalize(glm::vec3(matB[0])), 
-            glm::normalize(glm::vec3(matB[1])), 
-            glm::normalize(glm::vec3(matB[2])) 
-        };
+        glm::vec3 A[3] = {glm::normalize(glm::vec3(matA[0])),
+                          glm::normalize(glm::vec3(matA[1])),
+                          glm::normalize(glm::vec3(matA[2]))};
+        glm::vec3 B[3] = {glm::normalize(glm::vec3(matB[0])),
+                          glm::normalize(glm::vec3(matB[1])),
+                          glm::normalize(glm::vec3(matB[2]))};
 
-        // Half-extents: 
-        // Since your matrix uses (_hitbox_size * 2.0f), 
+        // Half-extents:
+        // Since your matrix uses (_hitbox_size * 2.0f),
         // the length of the matrix columns is double the half-extent.
-        float eA[3] = { glm::length(glm::vec3(matA[0])) * 0.5f, 
-                        glm::length(glm::vec3(matA[1])) * 0.5f, 
-                        glm::length(glm::vec3(matA[2])) * 0.5f };
-        float eB[3] = { glm::length(glm::vec3(matB[0])) * 0.5f, 
-                        glm::length(glm::vec3(matB[1])) * 0.5f, 
-                        glm::length(glm::vec3(matB[2])) * 0.5f };
+        float eA[3] = {glm::length(glm::vec3(matA[0])) * 0.5f,
+                       glm::length(glm::vec3(matA[1])) * 0.5f,
+                       glm::length(glm::vec3(matA[2])) * 0.5f};
+        float eB[3] = {glm::length(glm::vec3(matB[0])) * 0.5f,
+                       glm::length(glm::vec3(matB[1])) * 0.5f,
+                       glm::length(glm::vec3(matB[2])) * 0.5f};
 
         // Rotation matrix between A and B
         float R[3][3], AbsR[3][3];
@@ -166,78 +171,98 @@ class HitboxedDrawableEntity : public DrawableEntity {
         for (int i = 0; i < 3; i++) {
             ra = eA[i];
             rb = eB[0] * AbsR[i][0] + eB[1] * AbsR[i][1] + eB[2] * AbsR[i][2];
-            if (glm::abs(glm::dot(Delta, A[i])) > ra + rb) return false;
+            if (glm::abs(glm::dot(Delta, A[i])) > ra + rb)
+                return false;
         }
 
         // 4-6: Axes B
         for (int i = 0; i < 3; i++) {
             ra = eA[0] * AbsR[0][i] + eA[1] * AbsR[1][i] + eA[2] * AbsR[2][i];
             rb = eB[i];
-            if (glm::abs(glm::dot(Delta, B[i])) > ra + rb) return false;
+            if (glm::abs(glm::dot(Delta, B[i])) > ra + rb)
+                return false;
         }
 
         // 7-15: Cross Products
         // A0 x B0
         ra = eA[1] * AbsR[2][0] + eA[2] * AbsR[1][0];
         rb = eB[1] * AbsR[0][2] + eB[2] * AbsR[0][1];
-        if (glm::abs(glm::dot(Delta, A[2]) * R[1][0] - glm::dot(Delta, A[1]) * R[2][0]) > ra + rb) return false;
+        if (glm::abs(glm::dot(Delta, A[2]) * R[1][0] -
+                     glm::dot(Delta, A[1]) * R[2][0]) > ra + rb)
+            return false;
 
         // A0 x B1
         ra = eA[1] * AbsR[2][1] + eA[2] * AbsR[1][1];
         rb = eB[0] * AbsR[0][2] + eB[2] * AbsR[0][0];
-        if (glm::abs(glm::dot(Delta, A[2]) * R[1][1] - glm::dot(Delta, A[1]) * R[2][1]) > ra + rb) return false;
+        if (glm::abs(glm::dot(Delta, A[2]) * R[1][1] -
+                     glm::dot(Delta, A[1]) * R[2][1]) > ra + rb)
+            return false;
 
         // A0 x B2
         ra = eA[1] * AbsR[2][2] + eA[2] * AbsR[1][2];
         rb = eB[0] * AbsR[0][1] + eB[1] * AbsR[0][0];
-        if (glm::abs(glm::dot(Delta, A[2]) * R[1][2] - glm::dot(Delta, A[1]) * R[2][2]) > ra + rb) return false;
+        if (glm::abs(glm::dot(Delta, A[2]) * R[1][2] -
+                     glm::dot(Delta, A[1]) * R[2][2]) > ra + rb)
+            return false;
 
         // A1 x B0
         ra = eA[0] * AbsR[2][0] + eA[2] * AbsR[0][0];
         rb = eB[1] * AbsR[1][2] + eB[2] * AbsR[1][1];
-        if (glm::abs(glm::dot(Delta, A[0]) * R[2][0] - glm::dot(Delta, A[2]) * R[0][0]) > ra + rb) return false;
+        if (glm::abs(glm::dot(Delta, A[0]) * R[2][0] -
+                     glm::dot(Delta, A[2]) * R[0][0]) > ra + rb)
+            return false;
 
         // A1 x B1
         ra = eA[0] * AbsR[2][1] + eA[2] * AbsR[0][1];
         rb = eB[0] * AbsR[1][2] + eB[2] * AbsR[1][0];
-        if (glm::abs(glm::dot(Delta, A[0]) * R[2][1] - glm::dot(Delta, A[2]) * R[0][1]) > ra + rb) return false;
+        if (glm::abs(glm::dot(Delta, A[0]) * R[2][1] -
+                     glm::dot(Delta, A[2]) * R[0][1]) > ra + rb)
+            return false;
 
         // A1 x B2
         ra = eA[0] * AbsR[2][2] + eA[2] * AbsR[0][2];
         rb = eB[0] * AbsR[1][1] + eB[1] * AbsR[1][0];
-        if (glm::abs(glm::dot(Delta, A[0]) * R[2][2] - glm::dot(Delta, A[2]) * R[0][2]) > ra + rb) return false;
+        if (glm::abs(glm::dot(Delta, A[0]) * R[2][2] -
+                     glm::dot(Delta, A[2]) * R[0][2]) > ra + rb)
+            return false;
 
         // A2 x B0
         ra = eA[0] * AbsR[1][0] + eA[1] * AbsR[0][0];
         rb = eB[1] * AbsR[2][2] + eB[2] * AbsR[2][1];
-        if (glm::abs(glm::dot(Delta, A[1]) * R[0][0] - glm::dot(Delta, A[0]) * R[1][0]) > ra + rb) return false;
+        if (glm::abs(glm::dot(Delta, A[1]) * R[0][0] -
+                     glm::dot(Delta, A[0]) * R[1][0]) > ra + rb)
+            return false;
 
         // A2 x B1
         ra = eA[0] * AbsR[1][1] + eA[1] * AbsR[0][1];
         rb = eB[0] * AbsR[2][2] + eB[2] * AbsR[2][0];
-        if (glm::abs(glm::dot(Delta, A[1]) * R[0][1] - glm::dot(Delta, A[0]) * R[1][1]) > ra + rb) return false;
+        if (glm::abs(glm::dot(Delta, A[1]) * R[0][1] -
+                     glm::dot(Delta, A[0]) * R[1][1]) > ra + rb)
+            return false;
 
         // A2 x B2
         ra = eA[0] * AbsR[1][2] + eA[1] * AbsR[0][2];
         rb = eB[0] * AbsR[2][1] + eB[1] * AbsR[2][0];
-        if (glm::abs(glm::dot(Delta, A[1]) * R[0][2] - glm::dot(Delta, A[0]) * R[1][2]) > ra + rb) return false;
+        if (glm::abs(glm::dot(Delta, A[1]) * R[0][2] -
+                     glm::dot(Delta, A[0]) * R[1][2]) > ra + rb)
+            return false;
 
         return true;
     }
 
-    bool x_intersects(HitboxedDrawableEntity* other) {
+    bool x_intersects(HitboxedDrawableEntity *other) {
         return bottom_x() < other->top_x() and top_x() > other->bottom_x();
     }
 
-    bool y_intersects(HitboxedDrawableEntity* other) {
+    bool y_intersects(HitboxedDrawableEntity *other) {
         return bottom_y() < other->top_y() and top_y() > other->bottom_y();
     }
 
-    bool z_intersects(HitboxedDrawableEntity* other) {
+    bool z_intersects(HitboxedDrawableEntity *other) {
         return bottom_z() < other->top_z() and top_z() > other->bottom_z();
     }
 
-    bool intersects(HitboxedDrawableEntity* other) {
+    bool intersects(HitboxedDrawableEntity *other) {
         return check_3D_collision(other);
     }
 

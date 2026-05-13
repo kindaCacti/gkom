@@ -13,21 +13,29 @@
 #include "../shapes/shape_factory.h"
 #include "entity.h"
 #include "../defines.h"
+#include "../bullet_buffer.h"
 
 class emiter : public DrawableEntity {
-    float _last_shot_time;
-    float _time_between_shots;
+    float _lastShotTime;
+    float _timeBetweenShots;
 
   public:
-    emiter(std::unique_ptr<Shape> &&shape, float current_time,
-           float time_between_shots)
-        : DrawableEntity(std::move(shape)), _last_shot_time(current_time),
-          _time_between_shots(time_between_shots) {}
+    emiter(std::unique_ptr<Shape> &&shape, float currentTime,
+           float timeBetweenShots)
+        : DrawableEntity(std::move(shape)), _lastShotTime(currentTime),
+          _timeBetweenShots(timeBetweenShots) {}
 
-    std::shared_ptr<Bullet> shootIfTime(ShapeFactory &shape_factory,
-                                        float current_time, float speed);
-    std::shared_ptr<Bullet> shoot(std::unique_ptr<Shape> &&bullet_shape,
-                                  float current_time, float speed);
+    std::shared_ptr<Bullet> shootIfTime(ShapeFactory &shapeFactory,
+                                        float currentTime, float speed);
+
+    void shootIfTime(ShapeFactory &shapeFactory, float currentTime, float speed,
+                     BulletBuffer &bulletBuffer);
+
+    std::shared_ptr<Bullet> shoot(std::unique_ptr<Shape> &&bulletShape,
+                                  float currentTime, float speed);
+
+    void shoot(std::unique_ptr<Shape> &&bullet_shape, float current_time,
+               float speed, BulletBuffer &bulletBuffer);
 };
 
 #endif
