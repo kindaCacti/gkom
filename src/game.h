@@ -15,7 +15,7 @@
 
 #include "camera.h"
 #include "./entities/player.h"
-#include "./entities/emmiter.h"
+#include "./entities/emiter.h"
 #include "defines.h"
 #include "shaders/shader_s.h"
 #include "shaders/utils.h"
@@ -25,7 +25,7 @@
 struct Game {
     Camera cam;
     std::shared_ptr<Player> player;
-    std::list<std::shared_ptr<Emmiter>> emmiters;
+    std::list<std::shared_ptr<emiter>> emiters;
     std::list<std::shared_ptr<Bullet>> bullets;
     ShapeFactory shapeFactory;
     TextureFactory textureFactory;
@@ -43,8 +43,10 @@ struct Game {
     void loadShaders();
     void loadAssets();
     void spawnPlayer();
-    void spawnEmiter(float time_between_shots, glm::vec3 position = glm::vec3(0.f), glm::vec3 rotation = glm::vec3(0.f));
-    void spawnRandomEmmiter();
+    void spawnEmiter(float time_between_shots,
+                     glm::vec3 position = glm::vec3(0.f),
+                     glm::vec3 rotation = glm::vec3(0.f));
+    void spawnRandomemiter();
     void snapPlayerIntoArea();
     void shootIfTime(float speed);
     void moveBullets();

@@ -10,11 +10,11 @@
 #include "../shapes/shape_factory.h"
 #include "entity.h"
 #include "../defines.h"
-#include "emmiter.h"
+#include "emiter.h"
 
-
-std::shared_ptr<Bullet> Emmiter::shootIfTime(ShapeFactory& shape_factory, float current_time, float speed) {
-    if(current_time - _last_shot_time < _time_between_shots) {
+std::shared_ptr<Bullet> emiter::shootIfTime(ShapeFactory &shape_factory,
+                                            float current_time, float speed) {
+    if (current_time - _last_shot_time < _time_between_shots) {
         return nullptr;
     }
 
@@ -25,9 +25,11 @@ std::shared_ptr<Bullet> Emmiter::shootIfTime(ShapeFactory& shape_factory, float 
     return shoot(std::move(bullet_asset), current_time, speed);
 }
 
-std::shared_ptr<Bullet> Emmiter::shoot(std::unique_ptr<Shape>&& bullet_shape, float current_time, float speed) {
+std::shared_ptr<Bullet> emiter::shoot(std::unique_ptr<Shape> &&bullet_shape,
+                                      float current_time, float speed) {
     _last_shot_time = current_time;
-    std::shared_ptr<Bullet> new_bullet = std::make_shared<Bullet>(std::move(bullet_shape), speed, _rot);
+    std::shared_ptr<Bullet> new_bullet =
+        std::make_shared<Bullet>(std::move(bullet_shape), speed, _rot);
     new_bullet->setPosition(_pos);
     new_bullet->setRotation(_rot);
     new_bullet->setScale(_scale);

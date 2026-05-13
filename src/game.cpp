@@ -9,7 +9,7 @@
 
 #include "camera.h"
 #include "./entities/player.h"
-#include "./entities/emmiter.h"
+#include "./entities/emiter.h"
 #include "defines.h"
 #include "shaders/shader_s.h"
 #include "shaders/utils.h"
@@ -20,8 +20,8 @@
 void Game::updateScene() {
     snapPlayerIntoArea();
     removeOutOfBoundsBullets();
-    while(currentFrameTime / emmiters.size() > 5.f) {
-        spawnRandomEmmiter();
+    while (currentFrameTime / emiters.size() > 5.f) {
+        spawnRandomemiter();
     }
     shootIfTime(BULLET_SPEED);
     moveBullets();
@@ -29,9 +29,7 @@ void Game::updateScene() {
     updateCamera();
 }
 
-void Game::drawScene() {
-    drawEntities();
-}
+void Game::drawScene() { drawEntities(); }
 
 void Game::doFramePreprocessing() {
     lastFrameTime = currentFrameTime;
@@ -42,14 +40,14 @@ void Game::doFramePreprocessing() {
 
 void Game::loadShaders() {
     shader = std::make_shared<Shader>("../shaders/blinn-phong.vs",
-                                        "../shaders/blinn-phong.fs");
+                                      "../shaders/blinn-phong.fs");
 }
 
 void Game::loadAssets() {
     textureFactory.registerTexture(
         std::make_shared<Texture>(Texture::newNoise2D(512, 512)), "noise");
     shapeFactory.registerMesh("../assets/teapot.obj", "teapot",
-                                glm::vec3(0.8f, 0.5f, 0.2f));
+                              glm::vec3(0.8f, 0.5f, 0.2f));
     shapeFactory.registerCube();
 }
 
@@ -64,23 +62,29 @@ void Game::spawnPlayer() {
     player = std::make_shared<Player>(Player(std::move(player_asset)));
 }
 
-void Game::spawnEmiter(float time_between_shots, glm::vec3 position, glm::vec3 rotation) {
-    auto emmiter_asset = shapeFactory.createShape(EMMITER_ASSET_NAME);
-    emmiter_asset->transform.scale(glm::vec3(1.0f));
-    emmiter_asset->transform.translate(glm::vec3(0.f, 0.f, 0.f));
+void Game::spawnEmiter(float time_between_shots, glm::vec3 position,
+                       glm::vec3 rotation) {
+    auto emiter_asset = shapeFactory.createShape(EMMITER_ASSET_NAME);
+    emiter_asset->transform.scale(glm::vec3(1.0f));
+    emiter_asset->transform.translate(glm::vec3(0.f, 0.f, 0.f));
     if (auto noise = textureFactory.createTexture("noise").lock()) {
-        emmiter_asset->bindDiffuseTexture(noise);
+        emiter_asset->bindDiffuseTexture(noise);
     }
-    emmiters.push_back(std::make_shared<Emmiter>(std::move(emmiter_asset), currentFrameTime, time_between_shots));
-    emmiters.back()->setPosition(position);
-    emmiters.back()->setRotation(rotation);
+    emiters.push_back(std::make_shared<emiter>(
+        std::move(emiter_asset), currentFrameTime, time_between_shots));
+    emiters.back()->setPosition(position);
+    emiters.back()->setRotation(rotation);
 }
 
-void Game::spawnRandomEmmiter() {
+void Game::spawnRandomemiter() {
     float angle = static_cast<float>(rand()) / RAND_MAX * 2.0f * 3.14159265f;
     float radius = AREA_RADIUS * 0.8f; // Spawn within 80% of the area radius
-    glm::vec3 position = glm::vec3(cos(angle) * radius, sin(angle) * radius, 0.f);
-    glm::vec3 rotation = glm::vec3(0.f, 0.f, - (glm::degrees(angle) + 180.0f + getRandomFloatBetween(-10.f, 10.f))); // Rotate to face the center
+    glm::vec3 position =
+        glm::vec3(cos(angle) * radius, sin(angle) * radius, 0.f);
+    glm::vec3 rotation = glm::vec3(
+        0.f, 0.f,
+        -(glm::degrees(angle) + 180.0f +
+          getRandomFloatBetween(-10.f, 10.f))); // Rotate to face the center
     spawnEmiter(0.5f, position, rotation);
 }
 
@@ -95,26 +99,27 @@ void Game::snapPlayerIntoArea() {
 }
 
 void Game::shootIfTime(float speed) {
-    for(auto emmiter : emmiters) {
-        auto bullet_pointer = emmiter->shootIfTime(shapeFactory, currentFrameTime, speed);
-        if(bullet_pointer) {
+    for (auto emiter : emiters) {
+        auto bullet_pointer =
+            emiter->shootIfTime(shapeFactory, currentFrameTime, speed);
+        if (bullet_pointer) {
             bullets.push_back(bullet_pointer);
         }
     }
 }
 
 void Game::moveBullets() {
-    for(auto bullet : bullets) {
+    for (auto bullet : bullets) {
         bullet->step(deltaTime, player->get_pos());
     }
 }
 
 void Game::removeOutOfBoundsBullets() {
     auto it = bullets.begin();
-    while(it != bullets.end()) {
+    while (it != bullets.end()) {
         float xpos = (*it)->get_pos().x;
         float ypos = (*it)->get_pos().y;
-        if(sqrt(xpos * xpos + ypos * ypos) > AREA_RADIUS) {
+        if (sqrt(xpos * xpos + ypos * ypos) > AREA_RADIUS) {
             it = bullets.erase(it);
         } else {
             ++it;
@@ -128,12 +133,12 @@ void Game::setupDefaultScene() {
     BlinnPhongParameters bpp;
     shader_utils::set_blinn_phong_uniforms(*shader, bpp);
     spawnPlayer();
-    for(int i = 0; i < 5; ++i) {
-        spawnRandomEmmiter();
+    for (int i = 0; i < 5; ++i) {
+        spawnRandomemiter();
     }
     player->setPosition(2.f, 0.f, 0.f);
     cam.setAspectRatio(static_cast<float>(SCR_WIDTH) /
-                        static_cast<float>(SCR_HEIGHT));
+                       static_cast<float>(SCR_HEIGHT));
     cam.setPosition(glm::vec3(-10.f, -10.f, 15.f));
     cam.initOrbitForTarget(player->get_pos());
     axes[0] = shapeFactory.createShape("cube", glm::vec3(1.f, 0.f, 0.f));
@@ -158,9 +163,10 @@ void Game::updateCamera() {
 }
 
 void Game::checkPlayerCollision() {
-    for(auto bullet : bullets) {
-        if(bullet->intersects(&*player)) {
-            std::cout << "Player hit!" << static_cast<float>(glfwGetTime()) << std::endl;
+    for (auto bullet : bullets) {
+        if (bullet->intersects(&*player)) {
+            std::cout << "Player hit!" << static_cast<float>(glfwGetTime())
+                      << std::endl;
         }
     }
 }
@@ -168,10 +174,10 @@ void Game::checkPlayerCollision() {
 void Game::drawEntities() {
     player->drawHitbox(*shader);
     player->draw(*shader);
-    for (auto& emiter : emmiters) {
+    for (auto &emiter : emiters) {
         emiter->draw(*shader);
     }
-    for (auto& bullet : bullets) {
+    for (auto &bullet : bullets) {
         // bullet->drawHitbox(*shader);
         bullet->draw(*shader);
     }
@@ -181,6 +187,7 @@ void Game::drawEntities() {
 }
 
 void Game::printStats() {
-    std::cout << "Number of bullets: " << bullets.size() << " (FPS: " << 1.0f / (deltaTime + 0.0001f) << ")" << "\r" << std::flush;
+    std::cout << "Number of bullets: " << bullets.size()
+              << " (FPS: " << 1.0f / (deltaTime + 0.0001f) << ")" << "\r"
+              << std::flush;
 }
-

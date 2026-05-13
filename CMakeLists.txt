@@ -30,7 +30,7 @@ add_executable(gkom
     includes/glad/src/glad.c
     src/entities/player.cpp
     src/entities/bullet.cpp
-    src/entities/emmiter.cpp
+    src/entities/emiter.cpp
     src/shaders/utils.cpp
 )
 
