@@ -29,6 +29,7 @@ add_executable(gkom
     src/game.cpp
     src/input.cpp
     includes/glad/src/glad.c
+    includes/stb/stb_image.cpp
     src/entities/player.cpp
     src/entities/bullet.cpp
     src/entities/emiter.cpp
