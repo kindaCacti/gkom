@@ -2,8 +2,11 @@
 #define TEXTURE_H
 
 #include <glad/glad.h>
+#include <stb_image.h>
 
 #include <random>
+#include <stdexcept>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -77,6 +80,70 @@ struct Texture {
 
         tex.unbind();
 
+        return tex;
+    }
+
+    // Loads an image from disk using stb_image (supports .jpg, .png, etc.).
+    // - `srgb=true` is recommended for color/albedo textures.
+    // - Flips vertically by default to match OpenGL UV convention.
+    static Texture fromFile(const std::string &path, bool srgb = true,
+                            bool flipVertically = true) {
+        stbi_set_flip_vertically_on_load(flipVertically ? 1 : 0);
+
+        int w = 0;
+        int h = 0;
+        int channelsInFile = 0;
+        unsigned char *data =
+            stbi_load(path.c_str(), &w, &h, &channelsInFile, 0);
+        if (!data || w <= 0 || h <= 0) {
+            const char *reason = stbi_failure_reason();
+            throw std::runtime_error(
+                std::string("Texture::fromFile: failed to load '") + path +
+                "'" +
+                (reason ? (std::string(": ") + reason) : std::string("")));
+        }
+
+        int channels = channelsInFile;
+        if (channels != 1 && channels != 3 && channels != 4) {
+            // Normalize uncommon formats (e.g. 2-channel) to RGBA.
+            stbi_image_free(data);
+            channels = 4;
+            data = stbi_load(path.c_str(), &w, &h, &channelsInFile, channels);
+            if (!data) {
+                const char *reason = stbi_failure_reason();
+                throw std::runtime_error(
+                    std::string(
+                        "Texture::fromFile: failed to reload as RGBA '") +
+                    path + "'" +
+                    (reason ? (std::string(": ") + reason) : std::string("")));
+            }
+        }
+
+        Texture tex;
+        tex.width = w;
+        tex.height = h;
+        tex.bind(0);
+
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
+        GLenum format = (channels == 4)   ? GL_RGBA
+                        : (channels == 3) ? GL_RGB
+                                          : GL_RED;
+        GLint internalFormat = 0;
+        if (channels == 4) {
+            internalFormat = srgb ? GL_SRGB8_ALPHA8 : GL_RGBA8;
+        } else if (channels == 3) {
+            internalFormat = srgb ? GL_SRGB8 : GL_RGB8;
+        } else {
+            internalFormat = GL_R8;
+        }
+
+        glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, tex.width, tex.height, 0,
+                     format, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+
+        stbi_image_free(data);
+        tex.unbind();
         return tex;
     }
 
