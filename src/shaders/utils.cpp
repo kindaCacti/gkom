@@ -6,11 +6,10 @@
 
 void shader_utils::set_blinn_phong_uniforms(
     const Shader &shader, const BlinnPhongParameters &parameters) {
-    shader.setInt("diffuse", parameters.diffuse);
     shader.setVec3("lightPos", parameters.light_pos);
     shader.setVec3("viewPos", parameters.view_pos);
     shader.setVec3("lightColor", parameters.light_color);
-    shader.setVec3("baseColor", parameters.base_color);
+    shader.setInt("baseColor", parameters.base_color);
     shader.setFloat("ambientStrength", parameters.ambient_strength);
     shader.setFloat("specularStrength", parameters.specular_strength);
     shader.setFloat("shininess", parameters.shininess);

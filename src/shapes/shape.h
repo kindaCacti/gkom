@@ -15,7 +15,7 @@
 class Shape {
     const std::weak_ptr<Mesh> mesh; // Pointer to shared GPU data
     std::optional<glm::vec3> colorOverride;
-    std::weak_ptr<Texture> diffuseTexture;
+    std::weak_ptr<Texture> baseColor;
 
   public:
     Transform transform;
@@ -24,8 +24,8 @@ class Shape {
 
     void setColorOverride(const glm::vec3 &color) { colorOverride = color; }
 
-    void bindDiffuseTexture(const std::shared_ptr<Texture> &texture) {
-        diffuseTexture = texture;
+    void bindTextureBaseColor(const std::shared_ptr<Texture> &texture) {
+        baseColor = texture;
     }
 
     void draw(unsigned int shaderProgram,
@@ -50,12 +50,12 @@ class Shape {
 
         // Draw the shared mesh
         glBindVertexArray(meshShared->VAO);
-        if (auto texShared = diffuseTexture.lock()) {
-            texShared->bind(DIFFUSE_TEXTURE_UNIT);
+        if (auto texShared = baseColor.lock()) {
+            texShared->bind(BASE_COLOR_TEXTURE_UNIT);
         }
         glDrawElements(GL_TRIANGLES, meshShared->indexCount, GL_UNSIGNED_INT,
                        0);
-        if (auto texShared = diffuseTexture.lock()) {
+        if (auto texShared = baseColor.lock()) {
             texShared->unbind();
         }
 

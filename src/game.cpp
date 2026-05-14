@@ -57,7 +57,7 @@ void Game::spawnPlayer() {
     player_asset->transform.translate(glm::vec3(0.f, 0.f, 0.f));
     player_asset->transform.rotate(180.f, glm::vec3(0.f, 0.f, 1.f));
     if (auto noise = textureFactory.createTexture("noise").lock()) {
-        player_asset->bindDiffuseTexture(noise);
+        player_asset->bindTextureBaseColor(noise);
     }
     player = std::make_shared<Player>(Player(std::move(player_asset)));
 }
@@ -68,7 +68,7 @@ void Game::spawnEmiter(float time_between_shots, glm::vec3 position,
     emiter_asset->transform.scale(glm::vec3(1.0f));
     emiter_asset->transform.translate(glm::vec3(0.f, 0.f, 0.f));
     if (auto noise = textureFactory.createTexture("noise").lock()) {
-        emiter_asset->bindDiffuseTexture(noise);
+        emiter_asset->bindTextureBaseColor(noise);
     }
     emiters.push_back(std::make_shared<emiter>(
         std::move(emiter_asset), currentFrameTime, time_between_shots));
