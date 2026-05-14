@@ -52,7 +52,8 @@ void main() {
   float diff = max(dot(N, L), 0.0);
   float spec = 0.0;
   float r = max(roughness, 0.001);
-  float shininess = max(1.0, 2.0 / (r * r) - 2.0);
+  // Map roughness -> Blinn-Phong shininess.
+  float shininess = clamp(2.0 / (r * r) - 2.0, 1.0, 256.0);
   if (diff > 0.0) {
     spec = pow(max(dot(N, H), 0.0), shininess);
     // Normalized-ish Blinn-Phong (helps specularStrength behave more predictably)
@@ -68,6 +69,11 @@ void main() {
   vec3 diffuse = diff * lightColor;
   vec3 specularTerm = specColor * spec * lightColor;
 
-  vec3 color = (ambient + diffuse) * diffuseAlbedo + specularTerm;
+  // Apply the "ambient" term to specular too (cheap stand-in for environment reflections).
+  // Without this, metallic surfaces tend to look unnaturally dark in scenes with only direct lighting.
+  vec3 ambientDiffuse = ambient * diffuseAlbedo;
+  vec3 ambientSpecular = ambient * specColor;
+
+  vec3 color = ambientDiffuse + diffuse * diffuseAlbedo + ambientSpecular + specularTerm;
   FragColor = vec4(color, 1.0);
 }
