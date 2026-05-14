@@ -27,6 +27,7 @@ struct Game {
     Camera cam;
     std::shared_ptr<Player> player;
     std::list<std::shared_ptr<emiter>> emiters;
+    std::vector<std::shared_ptr<Shape>> shapes;
     BulletBuffer bulletBuffer;
     ShapeFactory shapeFactory;
     TextureFactory textureFactory;

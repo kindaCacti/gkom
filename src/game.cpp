@@ -48,6 +48,13 @@ void Game::loadAssets() {
         std::make_shared<Texture>(Texture::newNoise2D(512, 512)), "noise");
     shapeFactory.registerMesh("../assets/teapot.obj", "teapot",
                               glm::vec3(0.8f, 0.5f, 0.2f));
+
+    shapeFactory.registerMesh("../assets/table.obj", "table",
+                              glm::vec3(0.8f, 0.5f, 0.2f));
+    textureFactory.registerTexture(
+        std::make_shared<Texture>(Texture::fromFile("../assets/wood.jpg")),
+        "wood");
+
     shapeFactory.registerCube();
 }
 
@@ -132,6 +139,20 @@ void Game::setupDefaultScene() {
         spawnRandomemiter();
     }
     player->setPosition(2.f, 0.f, 0.f);
+
+    auto table1 = shapeFactory.createShape("table");
+    table1->bindTextureBaseColor(textureFactory.createTexture("wood").lock());
+    table1->transform.scale(glm::vec3(16.0f));
+    table1->transform.translate(glm::vec3(0.5f, 0.f, -0.715f));
+    table1->transform.rotate(90.f, glm::vec3(1.f, 0.f, 0.f));
+    shapes.push_back(std::move(table1));
+    auto table2 = shapeFactory.createShape("table");
+    table2->bindTextureBaseColor(textureFactory.createTexture("wood").lock());
+    table2->transform.scale(glm::vec3(16.0f));
+    table2->transform.translate(glm::vec3(-0.5f, 0.f, -0.715f));
+    table2->transform.rotate(90.f, glm::vec3(1.f, 0.f, 0.f));
+    shapes.push_back(std::move(table2));
+
     cam.setAspectRatio(static_cast<float>(SCR_WIDTH) /
                        static_cast<float>(SCR_HEIGHT));
     cam.setPosition(glm::vec3(-10.f, -10.f, 15.f));
@@ -169,6 +190,9 @@ void Game::drawEntities() {
     player->draw(*shader);
     for (auto &emiter : emiters) {
         emiter->draw(*shader);
+    }
+    for (auto &shape : shapes) {
+        shape->draw(*shader, glm::mat4(1.0f));
     }
     bulletBuffer.drawActiveElements(*shader);
     for (int i = 0; i < 3; ++i) {
