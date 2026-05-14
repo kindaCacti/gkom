@@ -133,6 +133,18 @@ void Game::setupDefaultScene() {
     loadShaders();
     shader->use();
     BlinnPhongParameters bpp;
+
+    bpp.num_lights = 3;
+    bpp.light_pos[0] = glm::vec3(50.0f, 50.0f, 50.0f);
+    bpp.light_color[0] = glm::vec3(1.0f, 1.0f, 1.0f);
+    bpp.light_strength[0] = 10000.0f;
+    bpp.light_pos[1] = glm::vec3(7.0f, 7.0f, 1.0f);
+    bpp.light_color[1] = glm::vec3(1.0f, 0.6f, 0.5f);
+    bpp.light_strength[1] = 15.0f;
+    bpp.light_pos[2] = glm::vec3(-7.0f, -7.0f, 1.0f);
+    bpp.light_color[2] = glm::vec3(0.6f, 0.5f, 1.0f);
+    bpp.light_strength[2] = 10.0f;
+
     shader_utils::set_blinn_phong_uniforms(*shader, bpp);
     spawnPlayer();
     for (int i = 0; i < 5; ++i) {

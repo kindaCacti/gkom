@@ -5,6 +5,10 @@
 #define ROUGHNESS_UNIFORM_NAME "roughness"
 #define METALLIC_UNIFORM_NAME "metallic"
 #define SPECULAR_UNIFORM_NAME "specular"
+#define NUM_LIGHTS_UNIFORM_NAME "numLights"
+#define LIGHT_POS_ARR_UNIFORM_NAME "lightPosArr"
+#define LIGHT_COLOR_ARR_UNIFORM_NAME "lightColorArr"
+#define LIGHT_STRENGTH_ARR_UNIFORM_NAME "lightStrengthArr"
 
 #include "./shader_s.h"
 #include "./shader_params.h"

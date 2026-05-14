@@ -1,19 +1,33 @@
 #include <glm/glm.hpp>
 
+#include <algorithm>
+#include <string>
+
 #include "./utils.h"
 #include "./shader_s.h"
 #include "./shader_params.h"
 
 void shader_utils::set_blinn_phong_uniforms(
     const Shader &shader, const BlinnPhongParameters &parameters) {
-    shader.setVec3("lightPos", parameters.light_pos);
     shader.setVec3("viewPos", parameters.view_pos);
-    shader.setVec3("lightColor", parameters.light_color);
     shader.setInt("baseColor", parameters.base_color);
     shader.setFloat("ambientStrength", parameters.ambient_strength);
     shader.setFloat(ROUGHNESS_UNIFORM_NAME, parameters.roughness);
     shader.setFloat(SPECULAR_UNIFORM_NAME, parameters.specular);
     shader.setFloat(METALLIC_UNIFORM_NAME, parameters.metallic);
+
+    const int maxLights = BlinnPhongParameters::max_lights;
+    const int nLights = std::clamp(parameters.num_lights, 0, maxLights);
+    shader.setInt(NUM_LIGHTS_UNIFORM_NAME, nLights);
+
+    // Upload arrays
+    shader.setVec3Array(LIGHT_POS_ARR_UNIFORM_NAME, nLights,
+                        parameters.light_pos.data());
+    shader.setVec3Array(LIGHT_COLOR_ARR_UNIFORM_NAME, nLights,
+                        parameters.light_color.data());
+    shader.setFloatArray(LIGHT_STRENGTH_ARR_UNIFORM_NAME, nLights,
+                         parameters.light_strength.data());
+
     shader.setMat4("camera", parameters.camera);
 }
 
