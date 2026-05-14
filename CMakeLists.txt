@@ -22,6 +22,7 @@ endif()
 find_package(glfw3 REQUIRED)
 
 include_directories(includes/glad/include)
+include_directories(includes/stb)
 
 add_executable(gkom 
     src/main.cpp
