@@ -16,6 +16,9 @@ class Shape {
     const std::weak_ptr<Mesh> mesh; // Pointer to shared GPU data
     std::optional<glm::vec3> colorOverride;
     std::weak_ptr<Texture> baseColor;
+    float roughness = 0.4f;
+    float metallic = 0.0f;
+    float specular = 0.5f;
 
   public:
     Transform transform;
@@ -28,8 +31,11 @@ class Shape {
         baseColor = texture;
     }
 
-    void draw(unsigned int shaderProgram,
-              const glm::mat4 &parentTransform) const {
+    void setRoughness(float r) { roughness = r; }
+    void setMetallic(float m) { metallic = m; }
+    void setSpecular(float s) { specular = s; }
+
+    void draw(Shader &shader, const glm::mat4 &parentTransform) const {
         auto meshShared = mesh.lock();
         if (!meshShared) {
             return;
@@ -44,7 +50,7 @@ class Shape {
         }
 
         // Pass transform to shader
-        unsigned int modelLoc = glGetUniformLocation(shaderProgram, "model");
+        unsigned int modelLoc = glGetUniformLocation(shader.ID, "model");
         glm::mat4 model = parentTransform * transform.getMatrix();
         glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 
@@ -53,6 +59,8 @@ class Shape {
         if (auto texShared = baseColor.lock()) {
             texShared->bind(BASE_COLOR_TEXTURE_UNIT);
         }
+        shader_utils::set_blinn_phong_material_uniforms(shader, roughness,
+                                                        metallic, specular);
         glDrawElements(GL_TRIANGLES, meshShared->indexCount, GL_UNSIGNED_INT,
                        0);
         if (auto texShared = baseColor.lock()) {

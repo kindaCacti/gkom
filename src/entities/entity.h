@@ -85,7 +85,7 @@ class DrawableEntity : public Entity {
     DrawableEntity &operator=(DrawableEntity &&) = default;
 
     virtual bool draw(Shader &shader) const {
-        _shape->draw(shader.ID, getTransformMatrix());
+        _shape->draw(shader, getTransformMatrix());
         return true;
     }
 

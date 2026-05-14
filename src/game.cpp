@@ -172,7 +172,7 @@ void Game::drawEntities() {
     }
     bulletBuffer.drawActiveElements(*shader);
     for (int i = 0; i < 3; ++i) {
-        axes[i]->draw(shader->ID, glm::mat4(1.0f));
+        axes[i]->draw(*shader, glm::mat4(1.0f));
     }
 }
 

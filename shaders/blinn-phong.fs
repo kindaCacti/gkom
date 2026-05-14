@@ -12,11 +12,14 @@ in VS_OUT {
 uniform vec3 lightPos;
 uniform vec3 viewPos;
 uniform vec3 lightColor;
+uniform float ambientStrength;
 
 uniform sampler2D baseColor;
-uniform float ambientStrength;
-uniform float specularStrength;
-uniform float shininess;
+uniform float roughness;
+uniform float specular;
+uniform float metallic;
+
+const float PI = 3.14159265;
 
 void main() {
   vec3 albedo = fs_in.Color;
@@ -48,14 +51,23 @@ void main() {
 
   float diff = max(dot(N, L), 0.0);
   float spec = 0.0;
+  float r = max(roughness, 0.001);
+  float shininess = max(1.0, 2.0 / (r * r) - 2.0);
   if (diff > 0.0) {
-    spec = pow(max(dot(N, H), 0.0), max(shininess, 1.0));
+    spec = pow(max(dot(N, H), 0.0), shininess);
+    // Normalized-ish Blinn-Phong (helps specularStrength behave more predictably)
+    spec *= (shininess + 8.0) / (8.0 * PI);
   }
+
+  float m = clamp(metallic, 0.0, 1.0);
+  vec3 diffuseAlbedo = albedo * (1.0 - m);
+  vec3 F0 = mix(vec3(0.04), albedo, m);
+  vec3 specColor = F0 * specular;
 
   vec3 ambient = ambientStrength * lightColor;
   vec3 diffuse = diff * lightColor;
-  vec3 specular = specularStrength * spec * lightColor;
+  vec3 specularTerm = specColor * spec * lightColor;
 
-  vec3 color = (ambient + diffuse) * albedo + specular;
+  vec3 color = (ambient + diffuse) * diffuseAlbedo + specularTerm;
   FragColor = vec4(color, 1.0);
 }
