@@ -8,6 +8,8 @@
 #include <memory>
 #include <vector>
 
+#include "game.h"
+
 #include "camera.h"
 #include "entities/player.h"
 #include "shaders/utils.h"
@@ -17,7 +19,6 @@
 #include "shapes/shape_factory.h"
 #include "entities/player.h"
 #include "defines.h"
-#include "game.h"
 #include "input.h"
 // settings
 

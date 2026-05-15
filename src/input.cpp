@@ -15,8 +15,16 @@ void processInput(GLFWwindow *window, Game &game, float deltaTime) {
         glfwSetWindowShouldClose(window, true);
 
     const float step = MOVEMENT_SPEED * deltaTime;
-    glm::vec3 forward_dir = game.cam.getXYDirection();
-    glm::vec3 right_dir = glm::normalize(glm::cross(forward_dir, Z_UP));
+    glm::vec3 forward_dir;
+    glm::vec3 right_dir;
+    bool followCamera = CONTROLS_MODE == THIRD_PERSON;
+    if (followCamera) {
+        forward_dir = game.cam.getXYDirection();
+        right_dir = glm::normalize(glm::cross(forward_dir, Z_UP));
+    } else {
+        forward_dir = glm::vec3(-1.f, 0.f, 0.f);
+        right_dir = glm::vec3(0.f, 1.f, 0.f);
+    }
     forward_dir *= step;
     right_dir *= step;
 

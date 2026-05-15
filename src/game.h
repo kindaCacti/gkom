@@ -4,6 +4,13 @@
 #ifndef GAME_H
 #define GAME_H
 
+enum GameControlsMode {
+    THIRD_PERSON,
+    TOP_DOWN,
+};
+
+const GameControlsMode CONTROLS_MODE = TOP_DOWN;
+
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>

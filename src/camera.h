@@ -23,8 +23,10 @@ class Camera {
 
     // Orbit camera parameters (around the current target).
     float orbitYawDeg = 0.f;
+    float minYawDeg = CONTROLS_MODE == THIRD_PERSON ? -360.f : -10.f;
+    float maxYawDeg = CONTROLS_MODE == THIRD_PERSON ? 360.f : 10.f;
     float orbitPitchDeg = 0.f;
-    float minPitchDeg = 0.f;
+    float minPitchDeg = CONTROLS_MODE == THIRD_PERSON ? 0.f : 70.f;
     float maxPitchDeg = 80.f;
     float orbitRadius = 5.f;
     float orbitSensitivity = 0.05f;
@@ -123,6 +125,8 @@ class Camera {
         orbitLastY = ypos;
 
         orbitYawDeg += static_cast<float>(dx) * orbitSensitivity;
+        orbitYawDeg = std::clamp(orbitYawDeg, minYawDeg, maxYawDeg);
+        orbitYawDeg = std::fmod(orbitYawDeg, 360.f); // Wrap yaw to [0, 360)
         orbitPitchDeg += static_cast<float>(dy) * orbitSensitivity;
         orbitPitchDeg = std::clamp(orbitPitchDeg, minPitchDeg, maxPitchDeg);
     }

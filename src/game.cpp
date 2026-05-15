@@ -7,6 +7,7 @@
 #include <vector>
 #include <list>
 
+#include "game.h"
 #include "camera.h"
 #include "./entities/player.h"
 #include "./entities/emiter.h"
@@ -15,7 +16,6 @@
 #include "shaders/utils.h"
 #include "textures/texture_factory.h"
 #include "textures/texture.h"
-#include "game.h"
 
 void Game::updateScene() {
     snapPlayerIntoArea();
@@ -184,7 +184,8 @@ void Game::setupDefaultScene() {
 
 void Game::updateCamera() {
     cam.orbitAround(player->get_pos());
-    player->setRotation(0.f, 0.f, cam.getYaw());
+    if (CONTROLS_MODE == THIRD_PERSON)
+        player->setRotation(0.f, 0.f, cam.getYaw());
     shader->use();
     shader_utils::set_blinn_phong_view_pos(*shader, cam.getPosition());
     shader_utils::set_blinn_phong_camera(*shader, cam.getMatrix());
