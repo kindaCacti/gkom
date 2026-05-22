@@ -19,7 +19,9 @@
 #include "defines.h"
 #include "game.h"
 #include "input.h"
+#include "text/text.h"
 // settings
+
 
 int main() {
     glfwInit();
@@ -68,7 +70,14 @@ int main() {
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
         game.setupDefaultScene();
 
+        if(game.loadFont()) {
+            return -1;
+        }
+
+        glEnable(GL_BLEND);
         glEnable(GL_DEPTH_TEST);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
         while (!glfwWindowShouldClose(window)) {
 
             game.doFramePreprocessing();

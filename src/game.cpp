@@ -16,6 +16,17 @@
 #include "textures/texture_factory.h"
 #include "textures/texture.h"
 #include "game.h"
+#include "text/text.h"
+
+int Game::loadFont() {
+    Text = new TextRenderer();
+    if (!Text->Init("../assets/fonts/AovelSansRounded.ttf", 48, 800, 600)) {
+        std::cerr << "Failed while loading font" << std::endl;
+        return -1; // Initialization failed
+    }
+
+    return 0;
+}
 
 void Game::updateScene() {
     snapPlayerIntoArea();
@@ -212,8 +223,43 @@ void Game::drawEntities() {
     }
 }
 
+void Game::drawText(TextData& text) {
+    glDisable(GL_DEPTH_TEST);
+    Text->RenderText(text.text, text.x, text.y, text.scale, text.color);
+    glEnable(GL_DEPTH_TEST);
+}
+
+void Game::bundledDrawText(std::vector<TextData>& texts) {
+    glDisable(GL_DEPTH_TEST);
+    for(auto& text : texts) {
+        Text->RenderText(text.text, text.x, text.y, text.scale, text.color);
+    }
+    glEnable(GL_DEPTH_TEST);
+}
+
 void Game::printStats() {
-    std::cout << "Number of bullets: " << bulletBuffer.activeElementCount()
-              << " (FPS: " << 1.0f / (deltaTime + 0.0001f) << ")" << "\r"
-              << std::flush;
+    int fps = std::round(1.0f / (deltaTime + 0.0001f));
+
+    std::vector<TextData> texts = {
+        TextData {
+            .text = std::string("fps: ") + std::to_string(fps),
+            .x = 20.0f,
+            .y = 580.0f,
+            .scale = 0.3f,
+            .color = glm::vec3(0.0f, 0.0f, 0.0f)
+        },
+        TextData {
+            .text = std::string("bullets: ") + std::to_string(bulletBuffer.activeElementCount()),
+            .x = 20.0f,
+            .y = 560.0f,
+            .scale = 0.3f,
+            .color = glm::vec3(0.0f, 0.0f, 0.0f)
+        },
+    };
+
+    glDisable(GL_DEPTH_TEST);
+
+    bundledDrawText(texts);
+
+    glEnable(GL_DEPTH_TEST);
 }

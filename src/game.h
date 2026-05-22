@@ -14,14 +14,16 @@
 #include <list>
 
 #include "camera.h"
-#include "./entities/player.h"
-#include "./entities/emiter.h"
+#include "entities/player.h"
+#include "entities/emiter.h"
 #include "defines.h"
 #include "shaders/shader_s.h"
 #include "shaders/utils.h"
 #include "textures/texture_factory.h"
 #include "textures/texture.h"
-#include "./bullet_buffer.h"
+#include "bullet_buffer.h"
+#include "text/text.h"
+#include "text/text_data.h"
 
 struct Game {
     Camera cam;
@@ -36,9 +38,12 @@ struct Game {
     float deltaTime = 0.f;
     float currentFrameTime = static_cast<float>(glfwGetTime());
     float lastFrameTime = static_cast<float>(glfwGetTime());
+    TextRenderer* Text;
+
 
     Game() { loadAssets(); }
 
+    int loadFont();
     void updateScene();
     void drawScene();
     void doFramePreprocessing();
@@ -57,6 +62,8 @@ struct Game {
     void checkPlayerCollision();
     void drawEntities();
     void printStats();
+    void drawText(TextData& text);
+    void bundledDrawText(std::vector<TextData>& texts);
 
     void onFramebufferResize(GLFWwindow *window, int width, int height) {
         glViewport(0, 0, width, height);
@@ -67,6 +74,7 @@ struct Game {
     void onMouseMove(GLFWwindow *window, double xpos, double ypos) {
         cam.onMouseMove(xpos, ypos);
     }
+
 
     ~Game() = default;
 };

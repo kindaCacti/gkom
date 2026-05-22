@@ -41,6 +41,7 @@ class Shape {
             return;
         }
 
+        glUseProgram(shader.ID);
         const bool shouldRestoreColorAttrib = meshShared->hasColors;
         if (colorOverride.has_value()) {
             const glm::vec3 &c = colorOverride.value();
