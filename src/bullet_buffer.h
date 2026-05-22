@@ -1,5 +1,5 @@
-#ifndef ELEMENT_BUFFER_H
-#define ELEMENT_BUFFER_H
+#ifndef BULLET_BUFFER_H
+#define BULLET_BUFFER_H
 
 #include <vector>
 #include <glm/glm.hpp>
