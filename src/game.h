@@ -38,7 +38,7 @@ struct Game {
     float deltaTime = 0.f;
     float currentFrameTime = static_cast<float>(glfwGetTime());
     float lastFrameTime = static_cast<float>(glfwGetTime());
-    TextRenderer* Text;
+    TextRenderer Text;
 
 
     Game() { loadAssets(); }

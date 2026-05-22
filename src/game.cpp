@@ -19,8 +19,8 @@
 #include "text/text.h"
 
 int Game::loadFont() {
-    Text = new TextRenderer();
-    if (!Text->Init("../assets/fonts/AovelSansRounded.ttf", 48, 800, 600)) {
+    Text = TextRenderer();
+    if (!Text.Init("../assets/fonts/AovelSansRounded.ttf", 48, 800, 600)) {
         std::cerr << "Failed while loading font" << std::endl;
         return -1; // Initialization failed
     }
@@ -225,14 +225,14 @@ void Game::drawEntities() {
 
 void Game::drawText(TextData& text) {
     glDisable(GL_DEPTH_TEST);
-    Text->RenderText(text.text, text.x, text.y, text.scale, text.color);
+    Text.RenderText(text.text, text.x, text.y, text.scale, text.color);
     glEnable(GL_DEPTH_TEST);
 }
 
 void Game::bundledDrawText(std::vector<TextData>& texts) {
     glDisable(GL_DEPTH_TEST);
     for(auto& text : texts) {
-        Text->RenderText(text.text, text.x, text.y, text.scale, text.color);
+        Text.RenderText(text.text, text.x, text.y, text.scale, text.color);
     }
     glEnable(GL_DEPTH_TEST);
 }
