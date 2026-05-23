@@ -18,6 +18,9 @@
 #include "game.h"
 #include "text/text.h"
 
+void Game::setupGame() {
+}
+
 int Game::loadFont() {
     Text = TextRenderer();
     if (!Text.Init("../assets/fonts/AovelSansRounded.ttf", 48, 800, 600, shaders.textShader->ID)) {
@@ -54,7 +57,8 @@ void Game::loadShaders() {
                                                   "../shaders/blinn-phong.fs");
     shaders.textShader = std::make_shared<Shader>("../shaders/text.vs",
                                                   "../shaders/text.fs");
-
+    shaders.instancedShader = std::make_shared<Shader>("../shaders/instanced.vs",
+                                                       "../shaders/instanced.fs");
 }
 
 void Game::loadAssets() {
@@ -70,6 +74,11 @@ void Game::loadAssets() {
         "wood");
 
     shapeFactory.registerCube();
+
+    bulletBuffer.setupInstancedDrawing(
+        shapeFactory.createShape(BULLET_ASSET_NAME)->mesh.lock()->VAO, 
+        shapeFactory.createShape(BULLET_ASSET_NAME)->mesh.lock()->indexCount);
+
 }
 
 void Game::spawnPlayer() {
@@ -209,10 +218,18 @@ void Game::drawEntities() {
     for (auto &shape : shapes) {
         shape->draw(*shaders.gameShader, glm::mat4(1.0f));
     }
-    bulletBuffer.drawActiveElements(*shaders.gameShader);
+    if(!IS_INSTANCED) bulletBuffer.drawActiveElements(*shaders.gameShader);
+    else drawBulletsInstanced();
     for (int i = 0; i < 3; ++i) {
         axes[i]->draw(*shaders.gameShader, glm::mat4(1.0f));
     }
+}
+
+void Game::drawBulletsInstanced() {
+    shaders.instancedShader->use();
+    shaders.instancedShader->setMat4("projection", cam.getProjectionMatrix());
+    shaders.instancedShader->setMat4("view", cam.getViewMatrix());
+    bulletBuffer.drawActiveInstanced(*shaders.instancedShader);
 }
 
 void Game::drawText(TextData& text) {
@@ -244,6 +261,13 @@ void Game::printStats() {
             .text = std::string("bullets: ") + std::to_string(bulletBuffer.activeElementCount()),
             .x = 20.0f,
             .y = 560.0f,
+            .scale = 0.3f,
+            .color = glm::vec3(0.0f, 0.0f, 0.0f)
+        },
+        TextData {
+            .text = std::string("draw calls: ") + std::to_string(0),
+            .x = 20.0f,
+            .y = 540.0f,
             .scale = 0.3f,
             .color = glm::vec3(0.0f, 0.0f, 0.0f)
         },

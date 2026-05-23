@@ -84,7 +84,7 @@ class DrawableEntity : public Entity {
 
     DrawableEntity &operator=(DrawableEntity &&) = default;
 
-    virtual bool draw(Shader &shader) const {
+    virtual bool draw(Shader &shader, bool isInstanced = false) const {
         _shape->draw(shader, getTransformMatrix());
         return true;
     }
@@ -94,6 +94,13 @@ class DrawableEntity : public Entity {
         glm::mat4 R = getEulerRotationMatrix(_rot);
         glm::mat4 S = glm::scale(glm::mat4(1.0f), _scale);
         return T * R * S;
+    }
+
+    virtual glm::mat4 getTransformMatrixWithShapeTransform() const {
+        glm::mat4 T = glm::translate(glm::mat4(1.0f), _pos);
+        glm::mat4 R = getEulerRotationMatrix(_rot);
+        glm::mat4 S = glm::scale(glm::mat4(1.0f), _scale);
+        return T * R * S * _shape->transform.getMatrix();
     }
 
     void setShape(std::unique_ptr<Shape> &&shape) { _shape = std::move(shape); }

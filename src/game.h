@@ -28,6 +28,13 @@
 struct ShaderBundle {
     std::shared_ptr<Shader> gameShader;
     std::shared_ptr<Shader> textShader;
+    std::shared_ptr<Shader> instancedShader;
+};
+
+struct GameSettings {
+    bool instancingOn = false;
+    int startingEmmitersCount = 1;
+    float addEmmiterAfterTime = 1.0f;
 };
 
 struct Game {
@@ -38,17 +45,18 @@ struct Game {
     BulletBuffer bulletBuffer;
     ShapeFactory shapeFactory;
     TextureFactory textureFactory;
-    // std::shared_ptr<Shader> shader;
     ShaderBundle shaders;
     std::unique_ptr<Shape> axes[3]; // for debugging
     float deltaTime = 0.f;
     float currentFrameTime = static_cast<float>(glfwGetTime());
     float lastFrameTime = static_cast<float>(glfwGetTime());
     TextRenderer Text;
+    GameSettings settings;
 
 
     Game() { loadAssets(); }
 
+    void setupGame();
     int loadFont();
     void updateScene();
     void drawScene();
@@ -70,6 +78,7 @@ struct Game {
     void printStats();
     void drawText(TextData& text);
     void bundledDrawText(std::vector<TextData>& texts);
+    void drawBulletsInstanced();
 
     void onFramebufferResize(GLFWwindow *window, int width, int height) {
         glViewport(0, 0, width, height);

@@ -5,6 +5,11 @@
 #define SCR_WIDTH 800
 #define SCR_HEIGHT 600
 
+#define IS_INSTANCED false
+
+#define MAX_BULLETS 100000
+#define MAX_ENEMIES 1000
+
 #define BULLET_SPEED 10.0f
 
 #define AREA_RADIUS_SQ 2500.0f

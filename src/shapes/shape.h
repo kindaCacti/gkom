@@ -12,7 +12,7 @@
 #include "../textures/texture.h"
 #include "../shaders/shader_params.h"
 
-class Shape {
+struct Shape {
     const std::weak_ptr<Mesh> mesh; // Pointer to shared GPU data
     std::optional<glm::vec3> colorOverride;
     std::weak_ptr<Texture> baseColor;
@@ -20,7 +20,6 @@ class Shape {
     float metallic = 0.0f;
     float specular = 0.5f;
 
-  public:
     Transform transform;
 
     Shape(const std::shared_ptr<Mesh> &m) : mesh(m) {}
