@@ -25,6 +25,11 @@
 #include "text/text.h"
 #include "text/text_data.h"
 
+struct ShaderBundle {
+    std::shared_ptr<Shader> gameShader;
+    std::shared_ptr<Shader> textShader;
+};
+
 struct Game {
     Camera cam;
     std::shared_ptr<Player> player;
@@ -33,7 +38,8 @@ struct Game {
     BulletBuffer bulletBuffer;
     ShapeFactory shapeFactory;
     TextureFactory textureFactory;
-    std::shared_ptr<Shader> shader;
+    // std::shared_ptr<Shader> shader;
+    ShaderBundle shaders;
     std::unique_ptr<Shape> axes[3]; // for debugging
     float deltaTime = 0.f;
     float currentFrameTime = static_cast<float>(glfwGetTime());

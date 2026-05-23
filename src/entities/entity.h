@@ -275,7 +275,6 @@ class HitboxedDrawableEntity : public DrawableEntity {
 
     virtual void drawHitbox(Shader &shader) {
         glm::mat4 model = getHitboxTransformMatrix();
-        glUseProgram(shader.ID);
         unsigned int modelLoc = glGetUniformLocation(shader.ID, "model");
         glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);

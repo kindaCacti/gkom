@@ -20,7 +20,7 @@
 
 int Game::loadFont() {
     Text = TextRenderer();
-    if (!Text.Init("../assets/fonts/AovelSansRounded.ttf", 48, 800, 600)) {
+    if (!Text.Init("../assets/fonts/AovelSansRounded.ttf", 48, 800, 600, shaders.textShader->ID)) {
         std::cerr << "Failed while loading font" << std::endl;
         return -1; // Initialization failed
     }
@@ -50,8 +50,11 @@ void Game::doFramePreprocessing() {
 }
 
 void Game::loadShaders() {
-    shader = std::make_shared<Shader>("../shaders/blinn-phong.vs",
-                                      "../shaders/blinn-phong.fs");
+    shaders.gameShader = std::make_shared<Shader>("../shaders/blinn-phong.vs",
+                                                  "../shaders/blinn-phong.fs");
+    shaders.textShader = std::make_shared<Shader>("../shaders/text.vs",
+                                                  "../shaders/text.fs");
+
 }
 
 void Game::loadAssets() {
@@ -128,21 +131,9 @@ void Game::moveRemoveBullets() {
     bulletBuffer.moveRemoveActiveElements(deltaTime, player->get_pos());
 }
 
-// void Game::removeOutOfBoundsBullets() {
-//     auto it = bullets.begin();
-//     while (it != bullets.end()) {
-//         float xpos = (*it)->get_pos().x;
-//         float ypos = (*it)->get_pos().y;
-//         if (sqrt(xpos * xpos + ypos * ypos) > AREA_RADIUS) {
-//             (*it)->setShouldBeDrawn(false);
-//         }
-//         ++it;
-//     }
-// }
-
 void Game::setupDefaultScene() {
     loadShaders();
-    shader->use();
+    shaders.gameShader->use();
     BlinnPhongParameters bpp;
 
     bpp.num_lights = 3;
@@ -156,7 +147,7 @@ void Game::setupDefaultScene() {
     bpp.light_color[2] = glm::vec3(0.6f, 0.5f, 1.0f);
     bpp.light_strength[2] = 10.0f;
 
-    shader_utils::set_blinn_phong_uniforms(*shader, bpp);
+    shader_utils::set_blinn_phong_uniforms(*shaders.gameShader, bpp);
     spawnPlayer();
     for (int i = 0; i < 5; ++i) {
         spawnRandomemiter();
@@ -196,9 +187,9 @@ void Game::setupDefaultScene() {
 void Game::updateCamera() {
     cam.orbitAround(player->get_pos());
     player->setRotation(0.f, 0.f, cam.getYaw());
-    shader->use();
-    shader_utils::set_blinn_phong_view_pos(*shader, cam.getPosition());
-    shader_utils::set_blinn_phong_camera(*shader, cam.getMatrix());
+    shaders.gameShader->use();
+    shader_utils::set_blinn_phong_view_pos(*shaders.gameShader, cam.getPosition());
+    shader_utils::set_blinn_phong_camera(*shaders.gameShader, cam.getMatrix());
 }
 
 void Game::checkPlayerCollision() {
@@ -209,17 +200,18 @@ void Game::checkPlayerCollision() {
 }
 
 void Game::drawEntities() {
-    player->drawHitbox(*shader);
-    player->draw(*shader);
+    shaders.gameShader->use();
+    player->drawHitbox(*shaders.gameShader);
+    player->draw(*shaders.gameShader);
     for (auto &emiter : emiters) {
-        emiter->draw(*shader);
+        emiter->draw(*shaders.gameShader);
     }
     for (auto &shape : shapes) {
-        shape->draw(*shader, glm::mat4(1.0f));
+        shape->draw(*shaders.gameShader, glm::mat4(1.0f));
     }
-    bulletBuffer.drawActiveElements(*shader);
+    bulletBuffer.drawActiveElements(*shaders.gameShader);
     for (int i = 0; i < 3; ++i) {
-        axes[i]->draw(*shader, glm::mat4(1.0f));
+        axes[i]->draw(*shaders.gameShader, glm::mat4(1.0f));
     }
 }
 

@@ -31,7 +31,7 @@ public:
         CleanUp();
     }
 
-    bool Init(const char* fontPath, unsigned int fontSize, int windowWidth, int windowHeight) {
+    bool Init(const char* fontPath, unsigned int fontSize, int windowWidth, int windowHeight, unsigned int shaderId) {
         FT_Library ft;
         if (FT_Init_FreeType(&ft)) {
             std::cerr << "ERROR::FREETYPE: Could not init FreeType Library" << std::endl;
@@ -86,7 +86,8 @@ public:
         FT_Done_Face(face);
         FT_Done_FreeType(ft);
 
-        CompileShaders();
+        ShaderProgram = shaderId;
+        // CompileShaders();
         SetupBuffers();
         UpdateProjection(windowWidth, windowHeight);
 
@@ -170,52 +171,52 @@ private:
         glBindVertexArray(0);
     }
 
-    void CompileShaders() {
-        const char* vertexShaderSource = R"glsl(
-            #version 330 core
-            layout (location = 0) in vec4 vertex; 
-            out vec2 TexCoords;
-            uniform mat4 projection;
-            void main() {
-                gl_Position = projection * vec4(vertex.xy, 0.0, 1.0);
-                TexCoords = vertex.zw;
-            }
-        )glsl";
+    // void CompileShaders() {
+    //     const char* vertexShaderSource = R"glsl(
+    //         #version 330 core
+    //         layout (location = 0) in vec4 vertex; 
+    //         out vec2 TexCoords;
+    //         uniform mat4 projection;
+    //         void main() {
+    //             gl_Position = projection * vec4(vertex.xy, 0.0, 1.0);
+    //             TexCoords = vertex.zw;
+    //         }
+    //     )glsl";
 
-        const char* fragmentShaderSource = R"glsl(
-            #version 330 core
-            in vec2 TexCoords;
-            out vec4 FragColor;
+    //     const char* fragmentShaderSource = R"glsl(
+    //         #version 330 core
+    //         in vec2 TexCoords;
+    //         out vec4 FragColor;
 
-            uniform sampler2D textTexture;
-            uniform vec3 textColor;
+    //         uniform sampler2D textTexture;
+    //         uniform vec3 textColor;
 
-            void main() {    
-                float alphaValue = texture(textTexture, TexCoords).r;
-                FragColor = vec4(textColor, alphaValue);
-            }
-        )glsl";
+    //         void main() {    
+    //             float alphaValue = texture(textTexture, TexCoords).r;
+    //             FragColor = vec4(textColor, alphaValue);
+    //         }
+    //     )glsl";
 
-        unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
-        glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
-        glCompileShader(vertexShader);
+    //     unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
+    //     glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
+    //     glCompileShader(vertexShader);
 
-        unsigned int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-        glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
-        glCompileShader(fragmentShader);
+    //     unsigned int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    //     glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
+    //     glCompileShader(fragmentShader);
 
-        ShaderProgram = glCreateProgram();
-        glAttachShader(ShaderProgram, vertexShader);
-        glAttachShader(ShaderProgram, fragmentShader);
-        glLinkProgram(ShaderProgram);
+    //     ShaderProgram = glCreateProgram();
+    //     glAttachShader(ShaderProgram, vertexShader);
+    //     glAttachShader(ShaderProgram, fragmentShader);
+    //     glLinkProgram(ShaderProgram);
 
-        glDeleteShader(vertexShader);
-        glDeleteShader(fragmentShader);
+    //     glDeleteShader(vertexShader);
+    //     glDeleteShader(fragmentShader);
 
-        // UNIFORM BINDING FIX: Connect texture unit 0 explicitly
-        glUseProgram(ShaderProgram);
-        glUniform1i(glGetUniformLocation(ShaderProgram, "textTexture"), 0);
-    }
+    //     // UNIFORM BINDING FIX: Connect texture unit 0 explicitly
+    //     glUseProgram(ShaderProgram);
+    //     glUniform1i(glGetUniformLocation(ShaderProgram, "textTexture"), 0);
+    // }
 };
 
 #endif
