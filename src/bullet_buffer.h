@@ -6,6 +6,7 @@
 
 #include "./entities/bullet.h"
 #include "defines.h"
+#include "globals.h"
 
 class BulletBuffer {
     std::vector<std::shared_ptr<Bullet>> _elements;
@@ -113,6 +114,7 @@ class BulletBuffer {
     }
 
     void drawActiveInstanced(Shader &shader) {
+        gameStateData.addDrawCall();
         size_t count = activeElementCount();
         if (count > MAX_BULLETS) count = MAX_BULLETS;
         if (count == 0) return; // Nothing to draw!

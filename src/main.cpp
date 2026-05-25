@@ -20,6 +20,8 @@
 #include "game.h"
 #include "input.h"
 #include "text/text.h"
+#include "state.h"
+#include "globals.h"
 // settings
 
 
@@ -79,7 +81,7 @@ int main() {
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
         while (!glfwWindowShouldClose(window)) {
-
+            gameStateData.newFrame();
             game.doFramePreprocessing();
             processInput(window, game, game.deltaTime);
             game.updateScene();

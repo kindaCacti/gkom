@@ -13,6 +13,8 @@
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
+#include "../globals.h"
+
 struct Character {
     unsigned int TextureID; 
     glm::ivec2   Size;      
@@ -130,6 +132,7 @@ public:
             glBindBuffer(GL_ARRAY_BUFFER, VBO);
             glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices); 
             
+            gameStateData.addDrawCall();
             glDrawArrays(GL_TRIANGLES, 0, 6);
             
             x += (ch.Advance >> 6) * scale; 

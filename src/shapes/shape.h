@@ -11,6 +11,7 @@
 #include "../utils.h"
 #include "../textures/texture.h"
 #include "../shaders/shader_params.h"
+#include"../globals.h"
 
 struct Shape {
     const std::weak_ptr<Mesh> mesh; // Pointer to shared GPU data
@@ -61,6 +62,8 @@ struct Shape {
         }
         shader_utils::set_blinn_phong_material_uniforms(shader, roughness,
                                                         metallic, specular);
+
+        gameStateData.addDrawCall();
         glDrawElements(GL_TRIANGLES, meshShared->indexCount, GL_UNSIGNED_INT,
                        0);
         if (auto texShared = baseColor.lock()) {

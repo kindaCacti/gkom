@@ -17,6 +17,7 @@
 #include "textures/texture.h"
 #include "game.h"
 #include "text/text.h"
+#include "globals.h"
 
 void Game::setupGame() {
 }
@@ -265,7 +266,7 @@ void Game::printStats() {
             .color = glm::vec3(0.0f, 0.0f, 0.0f)
         },
         TextData {
-            .text = std::string("draw calls: ") + std::to_string(0),
+            .text = std::string("draw calls: ") + std::to_string(gameStateData.drawCallsMade),
             .x = 20.0f,
             .y = 540.0f,
             .scale = 0.3f,
