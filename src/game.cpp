@@ -35,7 +35,7 @@ int Game::loadFont() {
 void Game::updateScene() {
     snapPlayerIntoArea();
     // removeOutOfBoundsBullets();
-    while (currentFrameTime / emiters.size() > 5.f) {
+    while (currentFrameTime / emiters.size() > (settings.benchmarkOn ? BENCHMARK_SPAWNING_NEW_EMMITERS_AFTER_TIME : SPAWNING_NEW_EMMITERS_AFTER_TIME)) {
         spawnRandomemiter();
     }
     shootIfTime(BULLET_SPEED);
@@ -141,11 +141,8 @@ void Game::moveRemoveBullets() {
     bulletBuffer.moveRemoveActiveElements(deltaTime, player->get_pos());
 }
 
-void Game::setupDefaultScene() {
-    loadShaders();
-    shaders.gameShader->use();
+void Game::setupLights() {
     BlinnPhongParameters bpp;
-
     bpp.num_lights = 3;
     bpp.light_pos[0] = glm::vec3(50.0f, 50.0f, 50.0f);
     bpp.light_color[0] = glm::vec3(1.0f, 1.0f, 1.0f);
@@ -156,31 +153,10 @@ void Game::setupDefaultScene() {
     bpp.light_pos[2] = glm::vec3(-7.0f, -7.0f, 1.0f);
     bpp.light_color[2] = glm::vec3(0.6f, 0.5f, 1.0f);
     bpp.light_strength[2] = 10.0f;
-
     shader_utils::set_blinn_phong_uniforms(*shaders.gameShader, bpp);
-    spawnPlayer();
-    for (int i = 0; i < 5; ++i) {
-        spawnRandomemiter();
-    }
-    player->setPosition(2.f, 0.f, 0.f);
+}
 
-    auto table1 = shapeFactory.createShape("table");
-    table1->bindTextureBaseColor(textureFactory.createTexture("wood").lock());
-    table1->transform.scale(glm::vec3(16.0f));
-    table1->transform.translate(glm::vec3(0.5f, 0.f, -0.715f));
-    table1->transform.rotate(90.f, glm::vec3(1.f, 0.f, 0.f));
-    shapes.push_back(std::move(table1));
-    auto table2 = shapeFactory.createShape("table");
-    table2->bindTextureBaseColor(textureFactory.createTexture("wood").lock());
-    table2->transform.scale(glm::vec3(16.0f));
-    table2->transform.translate(glm::vec3(-0.5f, 0.f, -0.715f));
-    table2->transform.rotate(90.f, glm::vec3(1.f, 0.f, 0.f));
-    shapes.push_back(std::move(table2));
-
-    cam.setAspectRatio(static_cast<float>(SCR_WIDTH) /
-                       static_cast<float>(SCR_HEIGHT));
-    cam.setPosition(glm::vec3(-10.f, -10.f, 15.f));
-    cam.initOrbitForTarget(player->get_pos());
+void Game::setupAxes() {
     axes[0] = shapeFactory.createShape("cube", glm::vec3(1.f, 0.f, 0.f));
     axes[1] = shapeFactory.createShape("cube", glm::vec3(0.f, 1.f, 0.f));
     axes[2] = shapeFactory.createShape("cube", glm::vec3(0.f, 0.f, 1.f));
@@ -194,6 +170,58 @@ void Game::setupDefaultScene() {
     axes[2]->transform.translate(glm::vec3(0.f, 0.f, .5f));
 }
 
+void Game::setupTable() {
+    auto table1 = shapeFactory.createShape("table");
+    table1->bindTextureBaseColor(textureFactory.createTexture("wood").lock());
+    table1->transform.scale(glm::vec3(16.0f));
+    table1->transform.translate(glm::vec3(0.5f, 0.f, -0.715f));
+    table1->transform.rotate(90.f, glm::vec3(1.f, 0.f, 0.f));
+    shapes.push_back(std::move(table1));
+    auto table2 = shapeFactory.createShape("table");
+    table2->bindTextureBaseColor(textureFactory.createTexture("wood").lock());
+    table2->transform.scale(glm::vec3(16.0f));
+    table2->transform.translate(glm::vec3(-0.5f, 0.f, -0.715f));
+    table2->transform.rotate(90.f, glm::vec3(1.f, 0.f, 0.f));
+    shapes.push_back(std::move(table2));
+}
+
+void Game::setupScene() {
+    if(settings.benchmarkOn) setupBenchmarkScene();
+    else setupDefaultScene();
+}
+
+void Game::setupDefaultScene() {
+    loadShaders();
+    shaders.gameShader->use();
+    setupLights();
+    spawnPlayer();
+    for (int i = 0; i < 5; ++i) {
+        spawnRandomemiter();
+    }
+    player->setPosition(2.f, 0.f, 0.f);
+    setupTable();
+    cam.setAspectRatio(static_cast<float>(SCR_WIDTH) /
+                       static_cast<float>(SCR_HEIGHT));
+    cam.setPosition(glm::vec3(-10.f, -10.f, 15.f));
+    cam.initOrbitForTarget(player->get_pos());
+    setupAxes();
+}
+
+void Game::setupBenchmarkScene() {
+    loadShaders();
+    shaders.gameShader->use();
+    setupLights();
+    spawnPlayer();
+    player->setPosition(2.f, 0.f, 0.f);
+    setupTable();
+    cam.setAspectRatio(static_cast<float>(SCR_WIDTH) /
+                       static_cast<float>(SCR_HEIGHT));
+    cam.setPosition(glm::vec3(-10.f, -10.f, 15.f));
+    cam.initOrbitForTarget(player->get_pos());
+    setupAxes();
+
+}
+
 void Game::updateCamera() {
     cam.orbitAround(player->get_pos());
     player->setRotation(0.f, 0.f, cam.getYaw());
@@ -203,9 +231,11 @@ void Game::updateCamera() {
 }
 
 void Game::checkPlayerCollision() {
-    if (bulletBuffer.checkActiveBulletCollision(player.get())) {
-        std::cout << "Player hit!" << static_cast<float>(glfwGetTime())
-                  << std::endl;
+    if(settings.benchmarkOn) return;
+
+    int bulletId = bulletBuffer.checkActiveBulletCollision(player.get());
+    if (bulletId != -1) {
+        bulletBuffer.deactivateElement(static_cast<size_t>(bulletId));
     }
 }
 
@@ -219,7 +249,7 @@ void Game::drawEntities() {
     for (auto &shape : shapes) {
         shape->draw(*shaders.gameShader, glm::mat4(1.0f));
     }
-    if(!IS_INSTANCED) bulletBuffer.drawActiveElements(*shaders.gameShader);
+    if(!settings.instancingOn) bulletBuffer.drawActiveElements(*shaders.gameShader);
     else drawBulletsInstanced();
     for (int i = 0; i < 3; ++i) {
         axes[i]->draw(*shaders.gameShader, glm::mat4(1.0f));

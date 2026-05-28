@@ -32,7 +32,8 @@ struct ShaderBundle {
 };
 
 struct GameSettings {
-    bool instancingOn = false;
+    bool instancingOn = IS_INSTANCED;
+    bool benchmarkOn = BENCHMARK_ON;
     int startingEmmitersCount = 1;
     float addEmmiterAfterTime = 1.0f;
 };
@@ -71,7 +72,12 @@ struct Game {
     void snapPlayerIntoArea();
     void shootIfTime(float speed);
     void moveRemoveBullets();
+    void setupLights();
+    void setupAxes();
+    void setupTable();
+    void setupScene();
     void setupDefaultScene();
+    void setupBenchmarkScene();
     void updateCamera();
     void checkPlayerCollision();
     void drawEntities();

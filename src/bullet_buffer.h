@@ -44,8 +44,11 @@ class BulletBuffer {
     }
 
     void deactivateElement(size_t position) {
+        if (_activeCount == 0 || position >= _activeCount) return;
         --_activeCount;
-        std::swap(_elements[position], _elements[_activeCount]);
+        if (position != _activeCount) {
+            std::swap(_elements[position], _elements[_activeCount]);
+        }
     }
 
     void moveRemoveActiveElements(float deltaTime, glm::vec3 &&target) {
@@ -53,14 +56,18 @@ class BulletBuffer {
     }
 
     void moveRemoveActiveElements(float deltaTime, glm::vec3 &target) {
-        for (size_t i = 0; i < _activeCount; i++) {
+        for (size_t i = 0; i < _activeCount; ) {
             _elements[i]->step(deltaTime, target);
             auto bulletPosition = _elements[i]->get_pos();
             if (bulletPosition.x * bulletPosition.x +
                     bulletPosition.z * bulletPosition.z >=
                 AREA_RADIUS_SQ) {
                 deactivateElement(i);
+                // do NOT increment i: the bullet swapped into slot i still needs
+                // to be processed this frame.
+                continue;
             }
+            ++i;
         }
     }
 
@@ -70,13 +77,14 @@ class BulletBuffer {
         }
     }
 
-    bool
+    int
     checkActiveBulletCollision(HitboxedDrawableEntity *hitboxedDrawableEntity) {
         for (size_t i = 0; i < _activeCount; i++) {
+            if(_elements[i]->get_pos().x * _elements[i]->get_pos().x + _elements[i]->get_pos().z * _elements[i]->get_pos().z >= AREA_RADIUS_SQ + 100.0f) continue;
             if (_elements[i]->intersects(hitboxedDrawableEntity))
-                return true;
+                return (int)i;
         }
-        return false;
+        return -1;
     }
 
     void setupInstancedDrawing(unsigned int bulletMeshVAO, unsigned int _meshIndecesCount) {

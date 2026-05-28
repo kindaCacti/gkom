@@ -70,7 +70,7 @@ int main() {
                 }
             });
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-        game.setupDefaultScene();
+        game.setupScene();
 
         if(game.loadFont()) {
             return -1;

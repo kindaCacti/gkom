@@ -34,13 +34,20 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     )
 
     # Release: full optimization, no sanitizers, NDEBUG turns off GLM asserts.
+    # -flto=auto lets GCC parallelize the LTRANS stage automatically (otherwise
+    # gcc serializes it and emits "using serial compilation of N LTRANS jobs").
+    # Clang doesn't accept -flto=auto, so pass plain -flto there.
     add_compile_options(
         $<$<CONFIG:Release>:-O3>
         $<$<CONFIG:Release>:-DNDEBUG>
         $<$<CONFIG:Release>:-march=native>
-        $<$<CONFIG:Release>:-flto>
+        "$<$<AND:$<CONFIG:Release>,$<CXX_COMPILER_ID:GNU>>:-flto=auto>"
+        "$<$<AND:$<CONFIG:Release>,$<CXX_COMPILER_ID:Clang>>:-flto>"
     )
-    add_link_options($<$<CONFIG:Release>:-flto>)
+    add_link_options(
+        "$<$<AND:$<CONFIG:Release>,$<CXX_COMPILER_ID:GNU>>:-flto=auto>"
+        "$<$<AND:$<CONFIG:Release>,$<CXX_COMPILER_ID:Clang>>:-flto>"
+    )
 
     # RelWithDebInfo: optimized but with symbols, handy for profiling.
     add_compile_options(
