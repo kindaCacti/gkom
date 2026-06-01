@@ -31,7 +31,12 @@ void Bullet::rotateTowardsTarget(float delta_time, glm::vec3 target) {
 
 void Bullet::step(float delta_time, glm::vec3 target) {
     rotateTowardsTarget(delta_time, target);
-    glm::vec3 direction = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f) * getEulerRotationMatrix(_direction);
+    // Apply rotation as M * v (column-vector convention) so the direction
+    // matches every other transform in the project. Using v * M here secretly
+    // applies the transpose (= inverse, for rotations) and was previously
+    // cancelling out a sign-flip in spawnRandomemiter.
+    glm::vec3 direction =
+        glm::vec3(getEulerRotationMatrix(_direction) * glm::vec4(1.0f, 0.0f, 0.0f, 0.0f));
     direction = glm::normalize(direction);
     _pos.x += delta_time * _speed * direction.x;
     _pos.y += delta_time * _speed * direction.y;

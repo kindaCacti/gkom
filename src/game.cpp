@@ -37,7 +37,7 @@ void Game::updateScene() {
     snapPlayerIntoArea();
     // removeOutOfBoundsBullets();
     while (currentFrameTime / emiters.size() >
-           (settings.benchmarkOn ? BENCHMARK_SPAWNING_NEW_EMMITERS_AFTER_TIME
+           (gameSettings.is_benchmark ? BENCHMARK_SPAWNING_NEW_EMMITERS_AFTER_TIME
                                  : SPAWNING_NEW_EMMITERS_AFTER_TIME)) {
         spawnRandomemiter();
     }
@@ -57,41 +57,35 @@ void Game::doFramePreprocessing() {
 }
 
 void Game::loadShaders() {
-    shaders.gameShader = std::make_shared<Shader>("../shaders/blinn-phong.vs",
-                                                  "../shaders/blinn-phong.fs");
+    shaders.gameShader = std::make_shared<Shader>(gameSettings.gameShader.vertexShader.c_str(),
+                                                  gameSettings.gameShader.fragmentShader.c_str());
     shaders.textShader =
-        std::make_shared<Shader>("../shaders/text.vs", "../shaders/text.fs");
+        std::make_shared<Shader>(gameSettings.textShader.vertexShader.c_str(), gameSettings.textShader.fragmentShader.c_str());
     shaders.instancedShader = std::make_shared<Shader>(
-        "../shaders/instanced.vs", "../shaders/instanced.fs");
+        gameSettings.instancedShader.vertexShader.c_str(), gameSettings.instancedShader.fragmentShader.c_str());
+}
+
+void Game::registerMeshAsset(std::string&& name, std::string&& path, Transform&& transform, std::optional<glm::vec3> color) {
+    shapeFactory.registerMesh(path, name, color);
+    shapeFactory.registerTransform(name, Transform());
 }
 
 void Game::loadAssets() {
     textureFactory.registerTexture(
         std::make_shared<Texture>(Texture::newNoise2D(512, 512)), "noise");
-    shapeFactory.registerMesh("../assets/teapot.obj", "teapot",
-                              glm::vec3(0.8f, 0.5f, 0.2f));
-    shapeFactory.registerMesh("../assets/teapot2.obj", "teapot2");
-    textureFactory.registerTexture(
-        std::make_shared<Texture>(Texture::fromFile("../assets/teapot2.png")),
-        "teapot2");
 
-    shapeFactory.registerMesh("../assets/espresso.obj",
-                              Enemy::getAssetName(ESPRESSO));
-    shapeFactory.registerMesh("../assets/coffee2go.obj",
-                              Enemy::getAssetName(COFFEE2GO));
-    shapeFactory.registerMesh("../assets/coffeeMaker.obj",
-                              Enemy::getAssetName(COFFEE_MAKER));
-    shapeFactory.registerMesh("../assets/ordinaryCoffee.obj",
-                              Enemy::getAssetName(ORDINARY_COFFEE));
+    for (const auto& mesh : gameSettings.meshes){
+        shapeFactory.registerMesh(mesh.path, mesh.name, mesh.colorOverride);
+        shapeFactory.registerTransform(mesh.name, mesh.transform);
+    }
 
-    shapeFactory.registerMesh("../assets/droplet.obj", BULLET_ASSET_NAME,
-                              glm::vec3(67.f, 44.f, 6.f) / 255.f);
-
-    shapeFactory.registerMesh("../assets/table.obj", "table",
-                              glm::vec3(0.8f, 0.5f, 0.2f));
-    textureFactory.registerTexture(
-        std::make_shared<Texture>(Texture::fromFile("../assets/wood.jpg")),
-        "wood");
+    std::cout << gameSettings.textures.size() << std::endl;
+    for(const auto& texture : gameSettings.textures) {
+        textureFactory.registerTexture(
+            std::make_shared<Texture>(Texture::fromFile(texture.path)),
+            texture.name
+        );
+    }
 
     shapeFactory.registerCube();
 
@@ -131,8 +125,8 @@ void Game::spawnRandomemiter() {
         glm::vec3(cos(angle) * radius, sin(angle) * radius, 0.f);
     glm::vec3 rotation = glm::vec3(
         0.f, 0.f,
-        -(glm::degrees(angle) + 180.0f +
-          getRandomFloatBetween(-10.f, 10.f))); // Rotate to face the center
+        glm::degrees(angle) + 180.0f +
+            getRandomFloatBetween(-10.f, 10.f));
     spawnEmiter(0.5f, position, rotation);
 }
 
@@ -208,7 +202,7 @@ void Game::setupTable() {
 }
 
 void Game::setupScene() {
-    if (settings.benchmarkOn)
+    if (gameSettings.is_benchmark)
         setupBenchmarkScene();
     else
         setupDefaultScene();
@@ -224,8 +218,8 @@ void Game::setupDefaultScene() {
     }
     player->setPosition(2.f, 0.f, 0.f);
     setupTable();
-    cam.setAspectRatio(static_cast<float>(SCR_WIDTH) /
-                       static_cast<float>(SCR_HEIGHT));
+    cam.setAspectRatio(static_cast<float>(gameSettings.windowWidth) /
+                       static_cast<float>(gameSettings.windowHeight));
     cam.setPosition(glm::vec3(-10.f, -10.f, 15.f));
     cam.initOrbitForTarget(player->get_pos());
     setupAxes();
@@ -238,8 +232,8 @@ void Game::setupBenchmarkScene() {
     spawnPlayer();
     player->setPosition(2.f, 0.f, 0.f);
     setupTable();
-    cam.setAspectRatio(static_cast<float>(SCR_WIDTH) /
-                       static_cast<float>(SCR_HEIGHT));
+    cam.setAspectRatio(static_cast<float>(gameSettings.windowWidth) /
+                       static_cast<float>(gameSettings.windowHeight));
     cam.setPosition(glm::vec3(-10.f, -10.f, 15.f));
     cam.initOrbitForTarget(player->get_pos());
     setupAxes();
@@ -256,7 +250,7 @@ void Game::updateCamera() {
 }
 
 void Game::checkPlayerCollision() {
-    if (settings.benchmarkOn)
+    if (gameSettings.is_benchmark)
         return;
 
     for (int bulletId : bulletBuffer.checkActiveBulletCollision(player.get())) {
@@ -274,7 +268,7 @@ void Game::drawEntities() {
     for (auto &shape : shapes) {
         shape->draw(*shaders.gameShader, glm::mat4(1.0f));
     }
-    if (!settings.instancingOn)
+    if (!gameSettings.is_instanced)
         bulletBuffer.drawActiveElements(*shaders.gameShader);
     else
         drawBulletsInstanced();

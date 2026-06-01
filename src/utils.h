@@ -6,6 +6,8 @@
 #include <glm/gtc/quaternion.hpp>
 #include <random>
 
+
+
 class Transform {
     glm::mat4 mat;
 
@@ -50,6 +52,22 @@ class Transform {
         // Create new transform with new rotation but same position and scale
         mat = glm::translate(glm::mat4(1.0f), currentPosition) *
               glm::rotate(glm::mat4(1.0f), glm::radians(angleDegrees), axis);
+        mat[0] *= currentScale.x;
+        mat[1] *= currentScale.y;
+        mat[2] *= currentScale.z;
+    }
+    void setRotation(const glm::vec3 &eulerDegrees) {
+        glm::vec3 currentPosition = glm::vec3(mat[3]);
+        glm::vec3 currentScale = glm::vec3(glm::length(glm::vec3(mat[0])),
+                                        glm::length(glm::vec3(mat[1])),
+                                        glm::length(glm::vec3(mat[2])));
+
+        glm::mat4 rotationMat = glm::rotate(glm::mat4(1.0f), glm::radians(eulerDegrees.x), glm::vec3(1.0f, 0.0f, 0.0f));
+        rotationMat           = glm::rotate(rotationMat,           glm::radians(eulerDegrees.y), glm::vec3(0.0f, 1.0f, 0.0f));
+        rotationMat           = glm::rotate(rotationMat,           glm::radians(eulerDegrees.z), glm::vec3(0.0f, 0.0f, 1.0f));
+
+        mat = glm::translate(glm::mat4(1.0f), currentPosition) * rotationMat;
+        
         mat[0] *= currentScale.x;
         mat[1] *= currentScale.y;
         mat[2] *= currentScale.z;

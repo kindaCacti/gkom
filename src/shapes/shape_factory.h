@@ -10,12 +10,14 @@
 
 #include "../mesh/mesh.h"
 #include "../mesh/mesh_loader.h"
+#include "../utils.h"
 #include "shape.h"
 
 class ShapeFactory {
   private:
     // This stores the actual GPU data so it stays in memory
     std::map<std::string, std::shared_ptr<Mesh>> _meshCache;
+    std::map<std::string, Transform> _transformCache;
 
     void _loadCubeMesh() {
         float vertices[] = {
@@ -48,7 +50,11 @@ class ShapeFactory {
     }
 
   public:
-    ShapeFactory() { _loadCubeMesh(); }
+    ShapeFactory() { _loadCubeMesh(); _transformCache["cube"] = Transform(); }
+
+    void registerTransform(const std::string &name, const Transform &transform) {
+        _transformCache[name] = transform;
+    }
 
     void registerMesh(const std::shared_ptr<Mesh> &mesh,
                       const std::string &name) {
@@ -76,6 +82,9 @@ class ShapeFactory {
             auto newShape = std::make_unique<Shape>(it->second);
             if (colorOverride.has_value()) {
                 newShape->setColorOverride(colorOverride.value());
+            }
+            if (auto transform = _transformCache.find(name); transform != _transformCache.end()) {
+                newShape->transform = transform->second;
             }
             return newShape;
         }

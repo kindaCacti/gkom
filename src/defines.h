@@ -6,7 +6,7 @@
 #define SCR_HEIGHT 600
 
 #define IS_INSTANCED true
-#define BENCHMARK_ON false
+#define BENCHMARK_ON true
 
 #define MAX_BULLETS 100000
 #define MAX_ENEMIES 1000
@@ -14,7 +14,7 @@
 #define BULLET_SPEED 10.0f
 
 #define SPAWNING_NEW_EMMITERS_AFTER_TIME 5.0f
-#define BENCHMARK_SPAWNING_NEW_EMMITERS_AFTER_TIME 0.5f
+#define BENCHMARK_SPAWNING_NEW_EMMITERS_AFTER_TIME 0.2f
 
 #define AREA_RADIUS_SQ 2500.0f
 #define PLAYER_AREA_RADIUS 10.0f
@@ -23,5 +23,7 @@
 #define PLAYER_ASSET_NAME "teapot2"
 #define EMMITER_ASSET_NAME "cube"
 #define BULLET_ASSET_NAME "droplet"
+
+#define SETTINGS_FILE_PATH "../config.yaml"
 
 #endif

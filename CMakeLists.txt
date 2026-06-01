@@ -81,6 +81,25 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(freetype)
 # -------------------------------------------------------------------
 
+# -------------------------------------------------------------------
+# AUTOMATICALLY FETCH AND BUILD YAML-CPP
+# -------------------------------------------------------------------
+# Disable the parts of yaml-cpp we don't need so the build stays small.
+set(YAML_CPP_BUILD_TESTS    OFF CACHE INTERNAL "")
+set(YAML_CPP_BUILD_TOOLS    OFF CACHE INTERNAL "")
+set(YAML_CPP_BUILD_CONTRIB  OFF CACHE INTERNAL "")
+set(YAML_CPP_INSTALL        OFF CACHE INTERNAL "")
+set(YAML_BUILD_SHARED_LIBS  OFF CACHE INTERNAL "")
+
+FetchContent_Declare(
+    yaml-cpp
+    GIT_REPOSITORY https://github.com/jbeder/yaml-cpp.git
+    GIT_TAG        0.8.0
+)
+
+FetchContent_MakeAvailable(yaml-cpp)
+# -------------------------------------------------------------------
+
 add_executable(gkom 
     src/main.cpp
     src/game.cpp
@@ -113,4 +132,5 @@ target_link_libraries(gkom
     ${CMAKE_DL_LIBS} 
     glm
     freetype
+    yaml-cpp::yaml-cpp
 )

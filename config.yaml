@@ -1,0 +1,80 @@
+mesh:
+  - name: "teapot"
+    path: "../assets/teapot.obj"
+    color: [0.8, 0.5, 0.2]
+    position: [0.0, 0.0, 0.0]
+    rotation: [0.0, 0.0, 0.0]
+    scale: [1.0, 1.0, 1.0]
+      
+  - name: "teapot2"
+    path: "../assets/teapot2.obj"
+    position: [0.0, 0.0, 0.0]
+    rotation: [0.0, 0.0, 0.0]
+    scale: [1.0, 1.0, 1.0]
+
+  - name: "espresso" # From Enemy::getAssetName(ESPRESSO)
+    path: "../assets/espresso.obj"
+    position: [0.0, 0.0, 0.0]
+    rotation: [0.0, 0.0, 0.0]
+    scale: [1.0, 1.0, 1.0]
+
+  - name: "coffee2go" # From Enemy::getAssetName(COFFEE2GO)
+    path: "../assets/coffee2go.obj"
+    position: [0.0, 0.0, 0.0]
+    rotation: [0.0, 0.0, 0.0]
+    scale: [1.0, 1.0, 1.0]
+
+  - name: "coffee_maker" # From Enemy::getAssetName(COFFEE_MAKER)
+    path: "../assets/coffeeMaker.obj"
+    position: [0.0, 0.0, 0.0]
+    rotation: [0.0, 0.0, 180.0]
+    scale: [1.0, 1.0, 1.0]
+
+  - name: "ordinary_coffee" # From Enemy::getAssetName(ORDINARY_COFFEE)
+    path: "../assets/ordinaryCoffee.obj"
+    position: [0.0, 0.0, 0.0]
+    rotation: [0.0, 0.0, 180.0]
+    scale: [1.0, 1.0, 1.0]
+
+  - name: "droplet" # From BULLET_ASSET_NAME
+    path: "../assets/droplet.obj"
+    # Computed from: glm::vec3(67.f, 44.f, 6.f) / 255.f
+    color: [0.2627, 0.1725, 0.0235] 
+    position: [0.0, 0.0, 0.0]
+    rotation: [0.0, 0.0, -90.0]
+    scale: [1.0, 1.0, 1.0]
+
+  - name: "table"
+    path: "../assets/table.obj"
+    color: [0.8, 0.5, 0.2]
+    position: [0.0, 0.0, 0.0]
+    rotation: [0.0, 0.0, 0.0]
+    scale: [1.0, 1.0, 1.0]
+
+texture:
+  - name: "teapot2"
+    path: "../assets/teapot2.png"
+
+  - name: "wood"
+    path: "../assets/wood.jpg"
+
+shader:
+  game_shader:
+    vertex: "../shaders/blinn-phong.vs"
+    fragment: "../shaders/blinn-phong.fs"
+
+  text_shader:
+    vertex: "../shaders/text.vs"
+    fragment: "../shaders/text.fs"
+
+  instanced_shader:
+    vertex: "../shaders/instanced.vs"
+    fragment: "../shaders/instanced.fs"
+
+default_settings:
+  window:
+    width: 800
+    height: 600
+    title: "Coffee Invaders"
+  is_instanced: true
+  is_benchmark: true

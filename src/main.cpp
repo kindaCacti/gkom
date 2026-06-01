@@ -7,6 +7,7 @@
 #include <random>
 #include <memory>
 #include <vector>
+#include <yaml-cpp/yaml.h>
 
 #include "game.h"
 
@@ -23,10 +24,13 @@
 #include "text/text.h"
 #include "state.h"
 #include "globals.h"
+#include "settings.h"
 // settings
 
 
 int main() {
+    gameSettings = std::move(loadSettingsFromYaml(SETTINGS_FILE_PATH));    
+
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -36,7 +40,7 @@ int main() {
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
     GLFWwindow *window =
-        glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "LearnOpenGL", NULL, NULL);
+        glfwCreateWindow(gameSettings.windowWidth, gameSettings.windowHeight, gameSettings.title.c_str(), NULL, NULL);
     if (window == NULL) {
         std::cout << "Failed to create GLFW window" << std::endl;
         glfwTerminate();

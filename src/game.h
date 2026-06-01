@@ -69,6 +69,7 @@ struct Game {
     void drawScene();
     void doFramePreprocessing();
     void loadShaders();
+    void registerMeshAsset(std::string&& name, std::string&& path, Transform&& transform = Transform(), std::optional<glm::vec3> color = std::nullopt);
     void loadAssets();
     void spawnPlayer();
     void spawnEmiter(float time_between_shots,
