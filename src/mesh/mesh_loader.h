@@ -9,6 +9,7 @@
 #include <charconv>
 #include <cstddef>
 #include <cstdint>
+#include <filesystem>
 #include <fstream>
 #include <optional>
 #include <sstream>
@@ -99,33 +100,80 @@ struct VertexKey {
     int v;
     int vt;
     int vn;
+    int mat;
 
     bool operator==(const VertexKey &other) const {
-        return v == other.v && vt == other.vt && vn == other.vn;
+        return v == other.v && vt == other.vt && vn == other.vn &&
+               mat == other.mat;
     }
 };
 
 struct VertexKeyHasher {
     std::size_t operator()(const VertexKey &k) const noexcept {
-        // A simple mix for 3 ints.
+        // A simple mix for 4 ints.
         std::size_t h1 = std::hash<int>{}(k.v);
         std::size_t h2 = std::hash<int>{}(k.vt);
         std::size_t h3 = std::hash<int>{}(k.vn);
+        std::size_t h4 = std::hash<int>{}(k.mat);
         std::size_t h = h1;
         h ^= h2 + 0x9e3779b97f4a7c15ULL + (h << 6) + (h >> 2);
         h ^= h3 + 0x9e3779b97f4a7c15ULL + (h << 6) + (h >> 2);
+        h ^= h4 + 0x9e3779b97f4a7c15ULL + (h << 6) + (h >> 2);
         return h;
     }
 };
 
+inline void parse_mtl_diffuse_colors(
+    const std::filesystem::path &mtlPath,
+    std::unordered_map<std::string, glm::vec3> &outDiffuse) {
+    std::ifstream mtlFile(mtlPath);
+    if (!mtlFile.is_open()) {
+        return;
+    }
+
+    std::string current;
+    std::string line;
+    while (std::getline(mtlFile, line)) {
+        std::string_view sv(line);
+        sv = ltrim(sv);
+        if (sv.empty() || sv.front() == '#') {
+            continue;
+        }
+
+        if (startsWith(sv, "newmtl ")) {
+            sv.remove_prefix(7);
+            sv = ltrim(sv);
+            current = std::string(sv);
+            continue;
+        }
+
+        if (current.empty()) {
+            continue;
+        }
+
+        if (startsWith(sv, "Kd ")) {
+            sv.remove_prefix(3);
+            sv = ltrim(sv);
+            float r = 1.f, g = 1.f, b = 1.f;
+            std::istringstream iss{std::string(sv)};
+            iss >> r >> g >> b;
+            if (!iss.fail()) {
+                outDiffuse[current] = glm::vec3(r, g, b);
+            }
+            continue;
+        }
+    }
+}
+
 } // namespace detail
 
 // Loads a Wavefront OBJ file and uploads it as a GL mesh.
-// Supported statements: v, vt, vn, f. Materials/groups are ignored.
+// Supported statements: v, vt, vn, f.
+// Also supported (colors only): mtllib/usemtl with MTL Kd (diffuse color).
 // Vertex layout:
 // - location 0: position (vec3)
 // - location 1: normal (vec3) if any vn exists
-// - location 2: color (vec3) if color is provided
+// - location 2: color (vec3) if color is provided or MTL Kd is available
 // - location 3: texcoord (vec2) if any vt exists
 // NOTE: Requires a valid OpenGL context to be current when called.
 inline std::optional<Mesh>
@@ -164,7 +212,36 @@ load_obj(const std::string &path,
     texcoords.reserve(1024);
     normals.reserve(1024);
 
-    const bool hasColors = color.has_value();
+    // Material diffuse colors (Kd) parsed from referenced .mtl files.
+    std::unordered_map<std::string, glm::vec3> materialDiffuse;
+    materialDiffuse.reserve(64);
+
+    const std::filesystem::path objPath = std::filesystem::path(path);
+    const std::filesystem::path objDir = objPath.has_parent_path()
+                                             ? objPath.parent_path()
+                                             : std::filesystem::path(".");
+    for (const auto &raw : lines) {
+        std::string_view sv(raw);
+        sv = detail::ltrim(sv);
+        if (sv.empty() || sv.front() == '#') {
+            continue;
+        }
+        if (!detail::startsWith(sv, "mtllib ")) {
+            continue;
+        }
+        sv.remove_prefix(7);
+        sv = detail::ltrim(sv);
+
+        // mtllib can list multiple files on the same line.
+        std::istringstream iss{std::string(sv)};
+        std::string mtlName;
+        while (iss >> mtlName) {
+            const auto mtlPath = (objDir / mtlName).lexically_normal();
+            detail::parse_mtl_diffuse_colors(mtlPath, materialDiffuse);
+        }
+    }
+
+    const bool hasColors = color.has_value() || !materialDiffuse.empty();
     bool hasTexcoords = false;
     bool hasNormals = false;
     for (const auto &raw : lines) {
@@ -192,11 +269,50 @@ load_obj(const std::string &path,
         vertexMap;
     vertexMap.reserve(2048);
 
-    float minX = 0.f, maxX = 0.f, minY = 0.f, maxY = 0.f, minZ = 0.f, maxZ = 0.f;
+    float minX = 0.f, maxX = 0.f, minY = 0.f, maxY = 0.f, minZ = 0.f,
+          maxZ = 0.f;
+    glm::vec3 currentMtlColor(1.f, 1.f, 1.f);
+    int currentMtlId = -1;
+    std::unordered_map<std::string, int> materialId;
+    materialId.reserve(materialDiffuse.size());
+    std::vector<glm::vec3> materialColors;
+    materialColors.reserve(materialDiffuse.size());
+    if (!materialDiffuse.empty()) {
+        for (const auto &kv : materialDiffuse) {
+            const int id = static_cast<int>(materialColors.size());
+            materialId.emplace(kv.first, id);
+            materialColors.push_back(kv.second);
+        }
+    }
+
     for (const auto &raw : lines) {
         std::string_view sv(raw);
         sv = detail::ltrim(sv);
         if (sv.empty() || sv.front() == '#') {
+            continue;
+        }
+
+        if (!color.has_value() && !materialDiffuse.empty() &&
+            detail::startsWith(sv, "usemtl ")) {
+            sv.remove_prefix(7);
+            sv = detail::ltrim(sv);
+            const std::string name(sv);
+
+            auto it = materialId.find(name);
+            if (it != materialId.end()) {
+                currentMtlId = it->second;
+                if (currentMtlId >= 0 &&
+                    static_cast<std::size_t>(currentMtlId) <
+                        materialColors.size()) {
+                    currentMtlColor =
+                        materialColors[static_cast<std::size_t>(currentMtlId)];
+                } else {
+                    currentMtlColor = glm::vec3(1.f, 1.f, 1.f);
+                }
+            } else {
+                currentMtlId = -1;
+                currentMtlColor = glm::vec3(1.f, 1.f, 1.f);
+            }
             continue;
         }
 
@@ -281,7 +397,9 @@ load_obj(const std::string &path,
                     vnIndex = detail::resolveObjIndex(fvi.vn, normals.size());
                 }
 
-                detail::VertexKey key{posIndex, vtIndex, vnIndex};
+                const int matKey =
+                    (hasColors && !color.has_value()) ? currentMtlId : 0;
+                detail::VertexKey key{posIndex, vtIndex, vnIndex, matKey};
                 auto it = vertexMap.find(key);
                 if (it != vertexMap.end()) {
                     return it->second;
@@ -311,10 +429,16 @@ load_obj(const std::string &path,
                 }
 
                 if (hasColors) {
-                    const glm::vec3 c = *color;
-                    vertices.push_back(c.r);
-                    vertices.push_back(c.g);
-                    vertices.push_back(c.b);
+                    if (color.has_value()) {
+                        const glm::vec3 c = *color;
+                        vertices.push_back(c.r);
+                        vertices.push_back(c.g);
+                        vertices.push_back(c.b);
+                    } else {
+                        vertices.push_back(currentMtlColor.r);
+                        vertices.push_back(currentMtlColor.g);
+                        vertices.push_back(currentMtlColor.b);
+                    }
                 }
 
                 if (hasTexcoords) {
@@ -351,7 +475,8 @@ load_obj(const std::string &path,
         return std::nullopt;
     }
 
-    Mesh mesh(vertices, indices, hasNormals, hasColors, hasTexcoords, minX, maxX, minY, maxY, minZ, maxZ);
+    Mesh mesh(vertices, indices, hasNormals, hasColors, hasTexcoords, minX,
+              maxX, minY, maxY, minZ, maxZ);
     return mesh;
 }
 
