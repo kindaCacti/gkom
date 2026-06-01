@@ -80,6 +80,9 @@ void Game::loadAssets() {
     shapeFactory.registerMesh("../assets/ordinaryCoffee.obj",
                               Enemy::getAssetName(ORDINARY_COFFEE));
 
+    shapeFactory.registerMesh("../assets/droplet.obj", BULLET_ASSET_NAME,
+                              glm::vec3(67.f, 44.f, 6.f) / 255.f);
+
     shapeFactory.registerMesh("../assets/table.obj", "table",
                               glm::vec3(0.8f, 0.5f, 0.2f));
     textureFactory.registerTexture(
@@ -161,7 +164,13 @@ void Game::setupLights() {
     bpp.light_pos[2] = glm::vec3(-7.0f, -7.0f, 1.0f);
     bpp.light_color[2] = glm::vec3(0.6f, 0.5f, 1.0f);
     bpp.light_strength[2] = 10.0f;
+
+    shaders.gameShader->use();
     shader_utils::set_blinn_phong_uniforms(*shaders.gameShader, bpp);
+
+    // Reuse the same light uniforms for instanced bullets.
+    shaders.instancedShader->use();
+    shader_utils::set_blinn_phong_uniforms(*shaders.instancedShader, bpp);
 }
 
 void Game::setupAxes() {
@@ -274,6 +283,8 @@ void Game::drawBulletsInstanced() {
     shaders.instancedShader->use();
     shaders.instancedShader->setMat4("projection", cam.getProjectionMatrix());
     shaders.instancedShader->setMat4("view", cam.getViewMatrix());
+    shader_utils::set_blinn_phong_view_pos(*shaders.instancedShader,
+                                           cam.getPosition());
     bulletBuffer.drawActiveInstanced(*shaders.instancedShader);
 }
 
