@@ -181,7 +181,7 @@ load_obj(const std::string &path,
          std::optional<glm::vec3> color = std::nullopt) {
     std::ifstream file(path);
     if (!file.is_open()) {
-        return std::nullopt;
+        throw std::runtime_error("Failed to open OBJ file: " + path);
     }
 
     std::vector<std::string> lines;
