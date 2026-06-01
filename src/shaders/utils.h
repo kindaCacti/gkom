@@ -2,6 +2,10 @@
 #define SHADERS_UTILS_H
 
 #define BASE_COLOR_TEXTURE_UNIT 0
+#define ROUGHNESS_TEXTURE_UNIT 1
+
+#define BASE_COLOR_MAP_UNIFORM_NAME "baseColor"
+#define ROUGHNESS_MAP_UNIFORM_NAME "roughnessMap"
 #define ROUGHNESS_UNIFORM_NAME "roughness"
 #define METALLIC_UNIFORM_NAME "metallic"
 #define SPECULAR_UNIFORM_NAME "specular"

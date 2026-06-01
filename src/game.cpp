@@ -98,6 +98,9 @@ void Game::loadAssets() {
     textureFactory.registerTexture(std::make_shared<Texture>(Texture::fromFile(
                                        "../assets/kitchenDiffuse.png")),
                                    "kitchen_diffuse");
+    textureFactory.registerTexture(std::make_shared<Texture>(Texture::fromFile(
+                                       "../assets/kitchenRoughness.png")),
+                                   "kitchen_roughness");
 
     shapeFactory.registerCube();
 
@@ -210,6 +213,8 @@ void Game::setupTable() {
     auto kitchen = shapeFactory.createShape("kitchen");
     kitchen->bindTextureBaseColor(
         textureFactory.createTexture("kitchen_diffuse").lock());
+    kitchen->bindTextureRoughnessMap(
+        textureFactory.createTexture("kitchen_roughness").lock());
     kitchen->transform.scale(glm::vec3(1.5f));
     kitchen->transform.translate(glm::vec3(-3.f, 10.f, -6.790f));
     kitchen->transform.rotate(0.f, glm::vec3(0.f, 0.f, 1.f));
@@ -231,7 +236,6 @@ void Game::setupDefaultScene() {
     for (int i = 0; i < 5; ++i) {
         spawnRandomemiter();
     }
-    player->setPosition(2.f, 0.f, 0.f);
     setupTable();
     cam.setAspectRatio(static_cast<float>(SCR_WIDTH) /
                        static_cast<float>(SCR_HEIGHT));

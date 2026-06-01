@@ -21,6 +21,9 @@ uniform vec3 lightColorArr[MAX_LIGHTS];
 uniform float lightStrengthArr[MAX_LIGHTS];
 
 uniform sampler2D baseColor;
+uniform sampler2D roughnessMap;
+uniform bool hasBaseColorMap;
+uniform bool hasRoughnessMap;
 uniform float roughness;
 uniform float specular;
 uniform float metallic;
@@ -36,9 +39,8 @@ void main() {
     uv = fs_in.FragPos.xz * 0.25;
   }
   uv = fract(uv);
-  vec3 texBaseColor = texture(baseColor, uv).rgb;
-  if (length(texBaseColor) > 1e-6) {
-    albedo = texBaseColor;
+  if (hasBaseColorMap) {
+    albedo = texture(baseColor, uv).rgb;
   }
 
   vec3 N = fs_in.Normal;
@@ -53,8 +55,13 @@ void main() {
 
   vec3 V = normalize(viewPos - fs_in.FragPos);
 
-  // Prefer per-vertex roughness if provided; otherwise use the uniform.
-  float effectiveRoughness = (fs_in.Roughness > 0.0) ? fs_in.Roughness : roughness;
+  // Prefer roughnessMap if bound, otherwise per-vertex roughness, otherwise uniform.
+  float effectiveRoughness = roughness;
+  if (hasRoughnessMap) {
+    effectiveRoughness = texture(roughnessMap, uv).r;
+  } else if (fs_in.Roughness > 0.0) {
+    effectiveRoughness = fs_in.Roughness;
+  }
   float r = max(effectiveRoughness, 0.001);
   // Map roughness -> Blinn-Phong shininess.
   float shininess = clamp(2.0 / (r * r) - 2.0, 1.0, 256.0);

@@ -11,12 +11,13 @@
 #include "../utils.h"
 #include "../textures/texture.h"
 #include "../shaders/shader_params.h"
-#include"../globals.h"
+#include "../globals.h"
 
 struct Shape {
     const std::weak_ptr<Mesh> mesh; // Pointer to shared GPU data
     std::optional<glm::vec3> colorOverride;
     std::weak_ptr<Texture> baseColor;
+    std::weak_ptr<Texture> roughnessMap;
     float roughness = 0.4f;
     float metallic = 0.0f;
     float specular = 0.5f;
@@ -29,6 +30,10 @@ struct Shape {
 
     void bindTextureBaseColor(const std::shared_ptr<Texture> &texture) {
         baseColor = texture;
+    }
+
+    void bindTextureRoughnessMap(const std::shared_ptr<Texture> &texture) {
+        roughnessMap = texture;
     }
 
     void setRoughness(float r) { roughness = r; }
@@ -57,8 +62,17 @@ struct Shape {
 
         // Draw the shared mesh
         glBindVertexArray(meshShared->VAO);
+
+        const bool hasBase = !baseColor.expired();
+        const bool hasRough = !roughnessMap.expired();
+        shader.setBool("hasBaseColorMap", hasBase);
+        shader.setBool("hasRoughnessMap", hasRough);
+
         if (auto texShared = baseColor.lock()) {
             texShared->bind(BASE_COLOR_TEXTURE_UNIT);
+        }
+        if (auto roughTexShared = roughnessMap.lock()) {
+            roughTexShared->bind(ROUGHNESS_TEXTURE_UNIT);
         }
         shader_utils::set_blinn_phong_material_uniforms(shader, roughness,
                                                         metallic, specular);
@@ -67,7 +81,10 @@ struct Shape {
         glDrawElements(GL_TRIANGLES, meshShared->indexCount, GL_UNSIGNED_INT,
                        0);
         if (auto texShared = baseColor.lock()) {
-            texShared->unbind();
+            texShared->unbind(BASE_COLOR_TEXTURE_UNIT);
+        }
+        if (auto roughTexShared = roughnessMap.lock()) {
+            roughTexShared->unbind(ROUGHNESS_TEXTURE_UNIT);
         }
 
         if (colorOverride.has_value() && shouldRestoreColorAttrib) {

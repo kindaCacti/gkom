@@ -7,6 +7,7 @@
 
 struct BlinnPhongParameters {
     int base_color = BASE_COLOR_TEXTURE_UNIT;
+    int roughness_map = ROUGHNESS_TEXTURE_UNIT;
     float roughness = 0.4f;
     float specular = 0.5f;
     float metallic = 0.0f;
