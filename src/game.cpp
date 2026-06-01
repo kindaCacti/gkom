@@ -86,16 +86,7 @@ void Game::loadAssets() {
             texture.name
         );
     }
-
-    shapeFactory.registerMesh("../assets/kitchen.obj", "kitchen",
-                              glm::vec3(0.8f, 0.5f, 0.2f));
-    textureFactory.registerTexture(std::make_shared<Texture>(Texture::fromFile(
-                                       "../assets/kitchenDiffuse.png")),
-                                   "kitchen_diffuse");
-    textureFactory.registerTexture(std::make_shared<Texture>(Texture::fromFile(
-                                       "../assets/kitchenRoughness.png")),
-                                   "kitchen_roughness");
-
+    
     shapeFactory.registerCube();
 
     bulletBuffer.setupInstancedDrawing(

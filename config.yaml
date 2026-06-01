@@ -51,12 +51,25 @@ mesh:
     rotation: [0.0, 0.0, 0.0]
     scale: [1.0, 1.0, 1.0]
 
+  - name: "kitchen"
+    path: "../assets/kitchen.obj"
+    color: [0.8, 0.5, 0.2]
+    position: [0.0, 0.0, 0.0]
+    rotation: [0.0, 0.0, 0.0]
+    scale: [1.0, 1.0, 1.0]
+
 texture:
   - name: "teapot2"
     path: "../assets/teapot2.png"
 
   - name: "wood"
     path: "../assets/wood.jpg"
+
+  - name: "kitchen_diffuse"
+    path: "../assets/kitchenDiffuse.png"
+
+  - name: "kitchen_roughness"
+    path: "../assets/kitchenRoughness.png"
 
 shader:
   game_shader:
