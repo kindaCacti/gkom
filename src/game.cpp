@@ -168,13 +168,19 @@ void Game::moveRemoveBullets() {
 
 void Game::setupLights() {
     BlinnPhongParameters bpp;
-    bpp.num_lights = 2;
-    bpp.light_pos[0] = glm::vec3(-7.5f, 10.0f, 10.0f);
+    bpp.num_lights = 4;
+    bpp.light_pos[0] = glm::vec3(-10.f, 20.0f, 10.0f);
     bpp.light_color[0] = glm::vec3(1.0f, 1.0f, 1.0f);
     bpp.light_strength[0] = 1000.0f;
-    bpp.light_pos[1] = glm::vec3(7.5f, 10.0f, 10.0f);
+    bpp.light_pos[1] = glm::vec3(10.f, 20.0f, 10.0f);
     bpp.light_color[1] = glm::vec3(1.0f, 1.0f, 1.0f);
     bpp.light_strength[1] = 1000.0f;
+    bpp.light_pos[2] = glm::vec3(-10.f, -20.0f, 10.0f);
+    bpp.light_color[2] = glm::vec3(1.0f, 1.0f, 1.0f);
+    bpp.light_strength[2] = 1000.0f;
+    bpp.light_pos[3] = glm::vec3(10.f, -20.0f, 10.0f);
+    bpp.light_color[3] = glm::vec3(1.0f, 1.0f, 1.0f);
+    bpp.light_strength[3] = 1000.0f;
 
     shaders.gameShader->use();
     shader_utils::set_blinn_phong_uniforms(*shaders.gameShader, bpp);
@@ -210,15 +216,26 @@ void Game::setupAxes() {
 }
 
 void Game::setupTable() {
-    auto kitchen = shapeFactory.createShape("kitchen");
-    kitchen->bindTextureBaseColor(
-        textureFactory.createTexture("kitchen_diffuse").lock());
-    kitchen->bindTextureRoughnessMap(
-        textureFactory.createTexture("kitchen_roughness").lock());
-    kitchen->transform.scale(glm::vec3(1.5f));
-    kitchen->transform.translate(glm::vec3(-3.f, 10.f, -6.790f));
-    kitchen->transform.rotate(0.f, glm::vec3(0.f, 0.f, 1.f));
-    shapes.push_back(std::move(kitchen));
+    {
+        auto kitchen = shapeFactory.createShape("kitchen");
+        kitchen->bindTextureBaseColor(
+            textureFactory.createTexture("kitchen_diffuse").lock());
+        kitchen->bindTextureRoughnessMap(
+            textureFactory.createTexture("kitchen_roughness").lock());
+        kitchen->transform.scale(glm::vec3(1.5f));
+        kitchen->transform.rotate(0.f, glm::vec3(0.f, 0.f, 1.f));
+        shapes.push_back(std::move(kitchen));
+    }
+    {
+        auto kitchen = shapeFactory.createShape("kitchen");
+        kitchen->bindTextureBaseColor(
+            textureFactory.createTexture("kitchen_diffuse").lock());
+        kitchen->bindTextureRoughnessMap(
+            textureFactory.createTexture("kitchen_roughness").lock());
+        kitchen->transform.scale(glm::vec3(-1.5f, -1.5f, 1.5f));
+        kitchen->transform.rotate(0.f, glm::vec3(0.f, 0.f, 1.f));
+        shapes.push_back(std::move(kitchen));
+    }
 }
 
 void Game::setupScene() {
