@@ -14,7 +14,7 @@ uniform vec3 lightPosArr[MAX_LIGHTS];
 uniform vec3 lightColorArr[MAX_LIGHTS];
 uniform float lightStrengthArr[MAX_LIGHTS];
 
-const float shininess = 32.0;
+const float shininess = 64.0;
 const float specularStrength = 0.5;
 
 vec3 fastNorm(vec3 v) {
@@ -26,13 +26,14 @@ vec3 fastNorm(vec3 v) {
     }
 }
 
-// Approximate x^32 via squaring.
-float fastPow32(float x) {
+// Approximate x^64 via squaring.
+float fastPow64(float x) {
     float x2 = x * x;
     float x4 = x2 * x2;
     float x8 = x4 * x4;
     float x16 = x8 * x8;
-    return x16 * x16;
+    float x32 = x16 * x16;
+    return x32 * x32;
 }
 
 void main() {
@@ -64,8 +65,8 @@ void main() {
             // reflect(-L, N) == 2*dot(N,L)*N - L
             vec3 R = (2.0 * diff) * N - L;
             float x = max(dot(V, R), 0.0);
-            // shininess is constant 32, so compute x^32 via squaring.
-            spec = fastPow32(x);
+            // shininess is constant 64, so compute x^64 via squaring.
+            spec = fastPow64(x);
         }
 
         float strength = max(lightStrengthArr[i], 0.0);

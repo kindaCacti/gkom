@@ -85,7 +85,7 @@ void Game::loadAssets() {
                               Enemy::getAssetName(ORDINARY_COFFEE));
 
     shapeFactory.registerMesh("../assets/droplet.obj", BULLET_ASSET_NAME,
-                              glm::vec3(67.f, 44.f, 6.f) / 255.f);
+                              glm::vec3(15.f, 10.f, 1.f) / 255.f);
 
     shapeFactory.registerMesh("../assets/table.obj", "table",
                               glm::vec3(0.8f, 0.5f, 0.2f));
