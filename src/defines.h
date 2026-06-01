@@ -1,7 +1,7 @@
 #ifndef DEFINES_H
 #define DEFINES_H
 
-#define MOVEMENT_SPEED 3.0f
+#define MOVEMENT_SPEED 6.0f
 #define SCR_WIDTH 800
 #define SCR_HEIGHT 600
 
@@ -18,6 +18,8 @@
 
 #define AREA_RADIUS_SQ 2500.0f
 #define PLAYER_AREA_RADIUS 10.0f
+#define PLAYER_AREA_SIZE_X 7.2f
+#define PLAYER_AREA_SIZE_Y 10.0f
 #define MAX_ANGLE_CHANGE_PER_SECOND 10.0f
 
 #define PLAYER_ASSET_NAME "teapot2"

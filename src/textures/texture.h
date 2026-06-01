@@ -78,7 +78,7 @@ struct Texture {
         GLint swizzleMask[] = {GL_RED, GL_RED, GL_RED, GL_ONE};
         glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleMask);
 
-        tex.unbind();
+        tex.unbind(0);
 
         return tex;
     }
@@ -143,7 +143,7 @@ struct Texture {
         glGenerateMipmap(GL_TEXTURE_2D);
 
         stbi_image_free(data);
-        tex.unbind();
+        tex.unbind(0);
         return tex;
     }
 
@@ -152,7 +152,10 @@ struct Texture {
         glBindTexture(GL_TEXTURE_2D, id);
     }
 
-    void unbind() const { glBindTexture(GL_TEXTURE_2D, 0); }
+    void unbind(unsigned int unit) const {
+        glActiveTexture(GL_TEXTURE0 + unit);
+        glBindTexture(GL_TEXTURE_2D, 0);
+    }
 
     ~Texture() {
         if (id != 0) {
