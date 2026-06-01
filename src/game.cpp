@@ -18,6 +18,7 @@
 #include "textures/texture.h"
 #include "text/text.h"
 #include "globals.h"
+#include "entities/enemy.h"
 
 void Game::setupGame() {}
 
@@ -70,6 +71,13 @@ void Game::loadAssets() {
     shapeFactory.registerMesh("../assets/teapot.obj", "teapot",
                               glm::vec3(0.8f, 0.5f, 0.2f));
 
+    shapeFactory.registerMesh("../assets/espresso.obj",
+                              Enemy::getAssetName(ESPRESSO));
+    shapeFactory.registerMesh("../assets/coffee2go.obj",
+                              Enemy::getAssetName(COFFEE2GO));
+    shapeFactory.registerMesh("../assets/coffeeMaker.obj",
+                              Enemy::getAssetName(COFFEE_MAKER));
+
     shapeFactory.registerMesh("../assets/table.obj", "table",
                               glm::vec3(0.8f, 0.5f, 0.2f));
     textureFactory.registerTexture(
@@ -96,14 +104,11 @@ void Game::spawnPlayer() {
 
 void Game::spawnEmiter(float time_between_shots, glm::vec3 position,
                        glm::vec3 rotation) {
-    auto emiter_asset = shapeFactory.createShape(EMMITER_ASSET_NAME);
-    emiter_asset->transform.scale(glm::vec3(1.0f));
-    emiter_asset->transform.translate(glm::vec3(0.f, 0.f, 0.f));
-    if (auto noise = textureFactory.createTexture("noise").lock()) {
-        emiter_asset->bindTextureBaseColor(noise);
-    }
-    emiters.push_back(std::make_shared<emiter>(
-        std::move(emiter_asset), currentFrameTime, time_between_shots));
+    EnemyType type =
+        static_cast<EnemyType>(static_cast<float>(rand()) / RAND_MAX * 3.0f);
+    emiters.push_back(std::make_shared<Enemy>(
+        std::move(shapeFactory.createShape(Enemy::getAssetName(type))), type,
+        currentFrameTime, time_between_shots));
     emiters.back()->setPosition(position);
     emiters.back()->setRotation(rotation);
 }
