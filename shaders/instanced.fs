@@ -17,10 +17,30 @@ uniform float lightStrengthArr[MAX_LIGHTS];
 const float shininess = 32.0;
 const float specularStrength = 0.5;
 
+vec3 fastNorm(vec3 v) {
+    float len2 = dot(v, v);
+    if (len2 < 1e-12) {
+        return vec3(0.0, 0.0, 1.0);
+    } else {
+        return v * inversesqrt(len2);
+    }
+}
+
+// Approximate x^32 via squaring.
+float fastPow32(float x) {
+    float x2 = x * x;
+    float x4 = x2 * x2;
+    float x8 = x4 * x4;
+    float x16 = x8 * x8;
+    return x16 * x16;
+}
+
 void main() {
     vec3 albedo = vColor;
-    vec3 N = normalize(vNormal);
-    vec3 V = normalize(viewPos - vFragPos);
+    // Assumes vNormal is provided by the mesh.
+    vec3 N = fastNorm(vNormal);
+    // Compute view direction V from fragment to camera
+    vec3 V = fastNorm(viewPos - vFragPos);
 
     vec3 sumAmbient = vec3(0.0);
     vec3 sumDiffuse = vec3(0.0);
@@ -29,27 +49,34 @@ void main() {
     int nLights = clamp(numLights, 0, MAX_LIGHTS);
     for (int i = 0; i < nLights; ++i) {
         vec3 lightVec = lightPosArr[i] - vFragPos;
-        float dist = length(lightVec);
-        float attenuation = 1.0 / (1.0 + dist * dist);
-        vec3 L = (dist > 1e-6) ? (lightVec / dist) : vec3(0.0, 0.0, 1.0);
+        float dist2 = dot(lightVec, lightVec);
+        vec3 L = vec3(0.0, 0.0, 1.0);
+        if (dist2 >= 1e-12) {
+            L = lightVec * inversesqrt(dist2);
+        }
+        float attenuation = 1.0 / (1.0 + dist2);
 
         float diff = max(dot(N, L), 0.0);
 
         float spec = 0.0;
         if (diff > 0.0) {
-            vec3 R = reflect(-L, N);
-            spec = pow(max(dot(V, R), 0.0), shininess);
+            // Classic Phong specular with cheap math:
+            // reflect(-L, N) == 2*dot(N,L)*N - L
+            vec3 R = (2.0 * diff) * N - L;
+            float x = max(dot(V, R), 0.0);
+            // shininess is constant 32, so compute x^32 via squaring.
+            spec = fastPow32(x);
         }
 
         float strength = max(lightStrengthArr[i], 0.0);
         vec3 lc = lightColorArr[i] * (strength * attenuation);
-        vec3 amb = ambientStrength * lc;
 
-        sumAmbient += amb * albedo;
-        sumDiffuse += diff * lc * albedo;
-        sumSpecular += spec * lc * specularStrength;
+        sumAmbient += (ambientStrength * lc);
+        sumDiffuse += (diff * lc);
+        sumSpecular += (spec * lc);
     }
 
-    vec3 color = sumAmbient + sumDiffuse + sumSpecular;
+    vec3 color = (sumAmbient + sumDiffuse) * albedo +
+                 (sumSpecular * specularStrength);
     FragColor = vec4(color, 1.0);
 }

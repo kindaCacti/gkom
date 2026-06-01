@@ -16,7 +16,8 @@ void main() {
     vColor = aColor;
     vec4 worldPos = instanceMatrix * vec4(aPos, 1.0);
     vFragPos = worldPos.xyz;
-    mat3 normalMat = mat3(transpose(inverse(instanceMatrix)));
-    vNormal = normalMat * aNormal;
+    // Fast normal transform for instanced bullets.
+    // NOTE: This assumes instanceMatrix doesn't include non-uniform scaling.
+    vNormal = mat3(instanceMatrix) * aNormal;
     gl_Position = projection * view * worldPos;
 }
