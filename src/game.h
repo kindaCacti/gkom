@@ -54,7 +54,7 @@ struct Game {
     ShapeFactory shapeFactory;
     TextureFactory textureFactory;
     ShaderBundle shaders;
-    std::unique_ptr<Shape> axes[3]; // for debugging
+    std::unique_ptr<Shape> axes[6]; // for debugging
     float deltaTime = 0.f;
     float currentFrameTime = static_cast<float>(glfwGetTime());
     float lastFrameTime = static_cast<float>(glfwGetTime());

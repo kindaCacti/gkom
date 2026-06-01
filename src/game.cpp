@@ -93,6 +93,12 @@ void Game::loadAssets() {
         std::make_shared<Texture>(Texture::fromFile("../assets/wood.jpg")),
         "wood");
 
+    shapeFactory.registerMesh("../assets/kitchen.obj", "kitchen",
+                              glm::vec3(0.8f, 0.5f, 0.2f));
+    textureFactory.registerTexture(std::make_shared<Texture>(Texture::fromFile(
+                                       "../assets/kitchenDiffuse.png")),
+                                   "kitchen_diffuse");
+
     shapeFactory.registerCube();
 
     bulletBuffer.setupInstancedDrawing(
@@ -159,16 +165,13 @@ void Game::moveRemoveBullets() {
 
 void Game::setupLights() {
     BlinnPhongParameters bpp;
-    bpp.num_lights = 3;
-    bpp.light_pos[0] = glm::vec3(50.0f, 50.0f, 50.0f);
+    bpp.num_lights = 2;
+    bpp.light_pos[0] = glm::vec3(-7.5f, 10.0f, 10.0f);
     bpp.light_color[0] = glm::vec3(1.0f, 1.0f, 1.0f);
-    bpp.light_strength[0] = 10000.0f;
-    bpp.light_pos[1] = glm::vec3(7.0f, 7.0f, 1.0f);
-    bpp.light_color[1] = glm::vec3(1.0f, 0.6f, 0.5f);
-    bpp.light_strength[1] = 15.0f;
-    bpp.light_pos[2] = glm::vec3(-7.0f, -7.0f, 1.0f);
-    bpp.light_color[2] = glm::vec3(0.6f, 0.5f, 1.0f);
-    bpp.light_strength[2] = 10.0f;
+    bpp.light_strength[0] = 1000.0f;
+    bpp.light_pos[1] = glm::vec3(7.5f, 10.0f, 10.0f);
+    bpp.light_color[1] = glm::vec3(1.0f, 1.0f, 1.0f);
+    bpp.light_strength[1] = 1000.0f;
 
     shaders.gameShader->use();
     shader_utils::set_blinn_phong_uniforms(*shaders.gameShader, bpp);
@@ -184,27 +187,33 @@ void Game::setupAxes() {
     axes[2] = shapeFactory.createShape("cube", glm::vec3(0.f, 0.f, 1.f));
     axes[0]->transform.rotate(90.f, glm::vec3(0.f, 1.f, 0.f));
     axes[1]->transform.rotate(-90.f, glm::vec3(1.f, 0.f, 0.f));
-    axes[0]->transform.scale(glm::vec3(0.05f, 0.05f, 2.f));
-    axes[1]->transform.scale(glm::vec3(0.05f, 0.05f, 2.f));
-    axes[2]->transform.scale(glm::vec3(0.05f, 0.05f, 2.f));
+    axes[0]->transform.scale(glm::vec3(0.05f, 0.05f, 1.f));
+    axes[1]->transform.scale(glm::vec3(0.05f, 0.05f, 1.f));
+    axes[2]->transform.scale(glm::vec3(0.05f, 0.05f, 1.f));
     axes[0]->transform.translate(glm::vec3(0.f, 0.f, .5f));
     axes[1]->transform.translate(glm::vec3(0.f, 0.f, .5f));
     axes[2]->transform.translate(glm::vec3(0.f, 0.f, .5f));
+    axes[3] = shapeFactory.createShape("cube", glm::vec3(1.f, 0.f, 0.f));
+    axes[4] = shapeFactory.createShape("cube", glm::vec3(0.f, 1.f, 0.f));
+    axes[5] = shapeFactory.createShape("cube", glm::vec3(0.f, 0.f, 1.f));
+    axes[3]->transform.rotate(90.f, glm::vec3(0.f, 1.f, 0.f));
+    axes[4]->transform.rotate(-90.f, glm::vec3(1.f, 0.f, 0.f));
+    axes[3]->transform.scale(glm::vec3(0.05f, 0.05f, 1.f));
+    axes[4]->transform.scale(glm::vec3(0.05f, 0.05f, 1.f));
+    axes[5]->transform.scale(glm::vec3(0.05f, 0.05f, 1.f));
+    axes[3]->transform.translate(glm::vec3(0.f, 0.f, 2.5f));
+    axes[4]->transform.translate(glm::vec3(0.f, 0.f, 2.5f));
+    axes[5]->transform.translate(glm::vec3(0.f, 0.f, 2.5f));
 }
 
 void Game::setupTable() {
-    auto table1 = shapeFactory.createShape("table");
-    table1->bindTextureBaseColor(textureFactory.createTexture("wood").lock());
-    table1->transform.scale(glm::vec3(16.0f));
-    table1->transform.translate(glm::vec3(0.5f, 0.f, -0.715f));
-    table1->transform.rotate(90.f, glm::vec3(1.f, 0.f, 0.f));
-    shapes.push_back(std::move(table1));
-    auto table2 = shapeFactory.createShape("table");
-    table2->bindTextureBaseColor(textureFactory.createTexture("wood").lock());
-    table2->transform.scale(glm::vec3(16.0f));
-    table2->transform.translate(glm::vec3(-0.5f, 0.f, -0.715f));
-    table2->transform.rotate(90.f, glm::vec3(1.f, 0.f, 0.f));
-    shapes.push_back(std::move(table2));
+    auto kitchen = shapeFactory.createShape("kitchen");
+    kitchen->bindTextureBaseColor(
+        textureFactory.createTexture("kitchen_diffuse").lock());
+    kitchen->transform.scale(glm::vec3(1.5f));
+    kitchen->transform.translate(glm::vec3(-3.f, 10.f, -6.790f));
+    kitchen->transform.rotate(0.f, glm::vec3(0.f, 0.f, 1.f));
+    shapes.push_back(std::move(kitchen));
 }
 
 void Game::setupScene() {
@@ -278,7 +287,7 @@ void Game::drawEntities() {
         bulletBuffer.drawActiveElements(*shaders.gameShader);
     else
         drawBulletsInstanced();
-    for (int i = 0; i < 3; ++i) {
+    for (int i = 0; i < 6; ++i) {
         axes[i]->draw(*shaders.gameShader, glm::mat4(1.0f));
     }
 }
