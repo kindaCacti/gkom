@@ -148,11 +148,15 @@ void Game::spawnRandomemiter() {
 void Game::snapPlayerIntoArea() {
     float xpos = player->get_pos().x;
     float ypos = player->get_pos().y;
-    float distance_from_center = sqrt(xpos * xpos + ypos * ypos);
-    if (distance_from_center > PLAYER_AREA_RADIUS) {
-        float scale = PLAYER_AREA_RADIUS / distance_from_center;
-        player->setPosition(xpos * scale, ypos * scale, player->get_pos().z);
-    }
+    // float distance_from_center = sqrt(xpos * xpos + ypos * ypos);
+    // if (distance_from_center > PLAYER_AREA_RADIUS) {
+    //     float scale = PLAYER_AREA_RADIUS / distance_from_center;
+    //     player->setPosition(xpos * scale, ypos * scale, player->get_pos().z);
+    // }
+    player->setPosition(
+        std::clamp(xpos, -PLAYER_AREA_SIZE_X, PLAYER_AREA_SIZE_X),
+        std::clamp(ypos, -PLAYER_AREA_SIZE_Y, PLAYER_AREA_SIZE_Y),
+        player->get_pos().z);
 }
 
 void Game::shootIfTime(float speed) {
