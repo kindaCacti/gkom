@@ -9,7 +9,7 @@ enum GameControlsMode {
     TOP_DOWN,
 };
 
-const GameControlsMode CONTROLS_MODE = TOP_DOWN;
+const GameControlsMode CONTROLS_MODE = THIRD_PERSON;
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -61,7 +61,6 @@ struct Game {
     TextRenderer Text;
     GameSettings settings;
 
-
     Game() { loadAssets(); }
 
     void setupGame();
@@ -89,8 +88,8 @@ struct Game {
     void checkPlayerCollision();
     void drawEntities();
     void printStats();
-    void drawText(TextData& text);
-    void bundledDrawText(std::vector<TextData>& texts);
+    void drawText(TextData &text);
+    void bundledDrawText(std::vector<TextData> &texts);
     void drawBulletsInstanced();
 
     void onFramebufferResize(GLFWwindow *window, int width, int height) {
@@ -102,7 +101,6 @@ struct Game {
     void onMouseMove(GLFWwindow *window, double xpos, double ypos) {
         cam.onMouseMove(xpos, ypos);
     }
-
 
     ~Game() = default;
 };
