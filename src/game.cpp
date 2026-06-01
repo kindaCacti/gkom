@@ -77,6 +77,8 @@ void Game::loadAssets() {
                               Enemy::getAssetName(COFFEE2GO));
     shapeFactory.registerMesh("../assets/coffeeMaker.obj",
                               Enemy::getAssetName(COFFEE_MAKER));
+    shapeFactory.registerMesh("../assets/ordinaryCoffee.obj",
+                              Enemy::getAssetName(ORDINARY_COFFEE));
 
     shapeFactory.registerMesh("../assets/table.obj", "table",
                               glm::vec3(0.8f, 0.5f, 0.2f));
@@ -105,7 +107,7 @@ void Game::spawnPlayer() {
 void Game::spawnEmiter(float time_between_shots, glm::vec3 position,
                        glm::vec3 rotation) {
     EnemyType type =
-        static_cast<EnemyType>(static_cast<float>(rand()) / RAND_MAX * 3.0f);
+        static_cast<EnemyType>(static_cast<float>(rand()) / RAND_MAX * 4.0f);
     emiters.push_back(std::make_shared<Enemy>(
         std::move(shapeFactory.createShape(Enemy::getAssetName(type))), type,
         currentFrameTime, time_between_shots));

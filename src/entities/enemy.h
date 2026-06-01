@@ -17,6 +17,7 @@ enum EnemyType {
     ESPRESSO,
     COFFEE2GO,
     COFFEE_MAKER,
+    ORDINARY_COFFEE,
 };
 
 class Enemy : public HitboxedDrawableEntity, public emiter {
@@ -39,6 +40,9 @@ class Enemy : public HitboxedDrawableEntity, public emiter {
         case COFFEE_MAKER:
             _shape->transform.scale(glm::vec3(0.9f));
             break;
+        case ORDINARY_COFFEE:
+            _shape->transform.scale(glm::vec3(0.6f));
+            break;
         default:
             throw std::runtime_error("Unknown EnemyType");
         }
@@ -52,6 +56,8 @@ class Enemy : public HitboxedDrawableEntity, public emiter {
             return "coffee2go";
         case COFFEE_MAKER:
             return "coffee_maker";
+        case ORDINARY_COFFEE:
+            return "ordinary_coffee";
         default:
             throw std::runtime_error("Unknown EnemyType");
         }
