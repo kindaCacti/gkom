@@ -75,15 +75,17 @@ class BulletBuffer {
         }
     }
 
-    int checkActiveBulletCollision(HitboxedDrawableEntity *target) {
+    std::vector<int>
+    checkActiveBulletCollision(HitboxedDrawableEntity *target) {
         if (_activeCount == 0)
-            return -1;
+            return {};
         // We assume that each bullet's bounding box is the same size, so we can
         // precompute the sum of the containing sphere radii.
         const float max_dist = _elements[0]->containingSphereRadius() +
                                target->containingSphereRadius();
         const float md2 =
             max_dist * max_dist; // Compare squared distances to avoid sqrt
+        std::vector<int> collisions;
         for (size_t i = 0; i < _activeCount; i++) {
             // Cheap bb reject before expensive intersection calculation.
             const glm::vec3 d = _elements[i]->get_pos() - target->get_pos();
@@ -93,9 +95,9 @@ class BulletBuffer {
 
             // Precise check:
             if (_elements[i]->intersects(target))
-                return (int)i;
+                collisions.push_back(static_cast<int>(i));
         }
-        return -1;
+        return collisions;
     }
 
     void setupInstancedDrawing(unsigned int bulletMeshVAO,

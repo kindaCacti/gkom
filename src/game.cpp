@@ -254,8 +254,7 @@ void Game::checkPlayerCollision() {
     if (settings.benchmarkOn)
         return;
 
-    int bulletId = bulletBuffer.checkActiveBulletCollision(player.get());
-    if (bulletId != -1) {
+    for (int bulletId : bulletBuffer.checkActiveBulletCollision(player.get())) {
         bulletBuffer.deactivateElement(static_cast<size_t>(bulletId));
     }
 }
