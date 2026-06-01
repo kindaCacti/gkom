@@ -7,12 +7,14 @@
 #include <glm/glm.hpp>
 
 #include <charconv>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
 #include <optional>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -123,13 +125,27 @@ struct VertexKeyHasher {
     }
 };
 
-inline void parse_mtl_diffuse_colors(
-    const std::filesystem::path &mtlPath,
-    std::unordered_map<std::string, glm::vec3> &outDiffuse) {
+inline void
+parse_mtl_diffuse_colors(const std::filesystem::path &mtlPath,
+                         std::unordered_map<std::string, glm::vec3> &outDiffuse,
+                         std::unordered_map<std::string, float> &outRoughness) {
     std::ifstream mtlFile(mtlPath);
     if (!mtlFile.is_open()) {
         return;
     }
+
+    auto roughnessFromNs = [](float ns) -> float {
+        // Approximate mapping from Blinn-Phong shininess (Ns) -> roughness.
+        // (Common in PBR conversions; keeps results in [0, 1].)
+        if (ns < 0.f)
+            ns = 0.f;
+        const float r = std::sqrt(2.0f / (ns + 2.0f));
+        if (r < 0.f)
+            return 0.f;
+        if (r > 1.f)
+            return 1.f;
+        return r;
+    };
 
     std::string current;
     std::string line;
@@ -162,6 +178,37 @@ inline void parse_mtl_diffuse_colors(
             }
             continue;
         }
+
+        // Roughness is not part of the classic MTL spec, but many exporters use
+        // extensions (e.g. "Pr" for roughness). Blender's legacy export often
+        // provides "Ns" shininess instead.
+        if (startsWith(sv, "Pr ")) {
+            sv.remove_prefix(3);
+            sv = ltrim(sv);
+            float pr = 0.4f;
+            std::istringstream iss{std::string(sv)};
+            iss >> pr;
+            if (!iss.fail()) {
+                if (pr < 0.f)
+                    pr = 0.f;
+                if (pr > 1.f)
+                    pr = 1.f;
+                outRoughness[current] = pr;
+            }
+            continue;
+        }
+
+        if (startsWith(sv, "Ns ")) {
+            sv.remove_prefix(3);
+            sv = ltrim(sv);
+            float ns = 0.f;
+            std::istringstream iss{std::string(sv)};
+            iss >> ns;
+            if (!iss.fail()) {
+                outRoughness[current] = roughnessFromNs(ns);
+            }
+            continue;
+        }
     }
 }
 
@@ -169,12 +216,14 @@ inline void parse_mtl_diffuse_colors(
 
 // Loads a Wavefront OBJ file and uploads it as a GL mesh.
 // Supported statements: v, vt, vn, f.
-// Also supported (colors only): mtllib/usemtl with MTL Kd (diffuse color).
+// Also supported: mtllib/usemtl with MTL Kd (diffuse color) and roughness
+// (Pr if present, otherwise derived from Ns).
 // Vertex layout:
 // - location 0: position (vec3)
 // - location 1: normal (vec3) if any vn exists
 // - location 2: color (vec3) if color is provided or MTL Kd is available
 // - location 3: texcoord (vec2) if any vt exists
+// - location 4: roughness (float)
 // NOTE: Requires a valid OpenGL context to be current when called.
 inline std::optional<Mesh>
 load_obj(const std::string &path,
@@ -215,6 +264,8 @@ load_obj(const std::string &path,
     // Material diffuse colors (Kd) parsed from referenced .mtl files.
     std::unordered_map<std::string, glm::vec3> materialDiffuse;
     materialDiffuse.reserve(64);
+    std::unordered_map<std::string, float> materialRoughness;
+    materialRoughness.reserve(64);
 
     const std::filesystem::path objPath = std::filesystem::path(path);
     const std::filesystem::path objDir = objPath.has_parent_path()
@@ -237,11 +288,14 @@ load_obj(const std::string &path,
         std::string mtlName;
         while (iss >> mtlName) {
             const auto mtlPath = (objDir / mtlName).lexically_normal();
-            detail::parse_mtl_diffuse_colors(mtlPath, materialDiffuse);
+            detail::parse_mtl_diffuse_colors(mtlPath, materialDiffuse,
+                                             materialRoughness);
         }
     }
 
     const bool hasColors = color.has_value() || !materialDiffuse.empty();
+    const bool hasRoughness = true;
+    const bool hasMaterialRoughness = !materialRoughness.empty();
     bool hasTexcoords = false;
     bool hasNormals = false;
     for (const auto &raw : lines) {
@@ -258,10 +312,10 @@ load_obj(const std::string &path,
         }
     }
 
-    const int strideFloats =
-        3 + (hasNormals ? 3 : 0) + (hasColors ? 3 : 0) + (hasTexcoords ? 2 : 0);
+    const int strideFloats = 3 + (hasNormals ? 3 : 0) + (hasColors ? 3 : 0) +
+                             (hasTexcoords ? 2 : 0) + (hasRoughness ? 1 : 0);
 
-    // packed: position, normal?, color?, texCoord?
+    // packed: position, normal?, color?, texCoord?, roughness
     std::vector<float> vertices;
     vertices.reserve(4096 * strideFloats);
     std::vector<unsigned int> indices; // triangles
@@ -272,17 +326,50 @@ load_obj(const std::string &path,
     float minX = 0.f, maxX = 0.f, minY = 0.f, maxY = 0.f, minZ = 0.f,
           maxZ = 0.f;
     glm::vec3 currentMtlColor(1.f, 1.f, 1.f);
+    float currentMtlRoughness = 0.4f;
     int currentMtlId = -1;
     std::unordered_map<std::string, int> materialId;
-    materialId.reserve(materialDiffuse.size());
+    materialId.reserve(materialDiffuse.size() + materialRoughness.size());
     std::vector<glm::vec3> materialColors;
-    materialColors.reserve(materialDiffuse.size());
+    materialColors.reserve(materialDiffuse.size() + materialRoughness.size());
+    std::vector<float> materialRoughnessById;
+    materialRoughnessById.reserve(materialDiffuse.size() +
+                                  materialRoughness.size());
     if (!materialDiffuse.empty()) {
         for (const auto &kv : materialDiffuse) {
             const int id = static_cast<int>(materialColors.size());
             materialId.emplace(kv.first, id);
             materialColors.push_back(kv.second);
+
+            auto rit = materialRoughness.find(kv.first);
+            materialRoughnessById.push_back(
+                rit != materialRoughness.end() ? rit->second : 0.4f);
         }
+    }
+
+    auto ensureMaterialId = [&](const std::string &name) -> int {
+        auto it = materialId.find(name);
+        if (it != materialId.end()) {
+            return it->second;
+        }
+
+        const int id = static_cast<int>(materialColors.size());
+        materialId.emplace(name, id);
+
+        auto cit = materialDiffuse.find(name);
+        materialColors.push_back(cit != materialDiffuse.end()
+                                     ? cit->second
+                                     : glm::vec3(1.f, 1.f, 1.f));
+
+        auto rit = materialRoughness.find(name);
+        materialRoughnessById.push_back(
+            rit != materialRoughness.end() ? rit->second : 0.4f);
+        return id;
+    };
+
+    // Ensure materials that only define roughness still get ids.
+    for (const auto &kv : materialRoughness) {
+        (void)ensureMaterialId(kv.first);
     }
 
     for (const auto &raw : lines) {
@@ -292,26 +379,29 @@ load_obj(const std::string &path,
             continue;
         }
 
-        if (!color.has_value() && !materialDiffuse.empty() &&
+        if ((hasMaterialRoughness ||
+             (!color.has_value() && !materialDiffuse.empty())) &&
             detail::startsWith(sv, "usemtl ")) {
             sv.remove_prefix(7);
             sv = detail::ltrim(sv);
             const std::string name(sv);
 
-            auto it = materialId.find(name);
-            if (it != materialId.end()) {
-                currentMtlId = it->second;
-                if (currentMtlId >= 0 &&
-                    static_cast<std::size_t>(currentMtlId) <
-                        materialColors.size()) {
-                    currentMtlColor =
-                        materialColors[static_cast<std::size_t>(currentMtlId)];
-                } else {
-                    currentMtlColor = glm::vec3(1.f, 1.f, 1.f);
-                }
+            currentMtlId = ensureMaterialId(name);
+            if (currentMtlId >= 0 && static_cast<std::size_t>(currentMtlId) <
+                                         materialColors.size()) {
+                currentMtlColor =
+                    materialColors[static_cast<std::size_t>(currentMtlId)];
             } else {
-                currentMtlId = -1;
                 currentMtlColor = glm::vec3(1.f, 1.f, 1.f);
+            }
+
+            if (currentMtlId >= 0 && static_cast<std::size_t>(currentMtlId) <
+                                         materialRoughnessById.size()) {
+                currentMtlRoughness =
+                    materialRoughnessById[static_cast<std::size_t>(
+                        currentMtlId)];
+            } else {
+                currentMtlRoughness = 0.4f;
             }
             continue;
         }
@@ -397,8 +487,11 @@ load_obj(const std::string &path,
                     vnIndex = detail::resolveObjIndex(fvi.vn, normals.size());
                 }
 
-                const int matKey =
-                    (hasColors && !color.has_value()) ? currentMtlId : 0;
+                const bool needsMaterialSplit =
+                    (hasColors && !color.has_value() &&
+                     !materialDiffuse.empty()) ||
+                    hasMaterialRoughness;
+                const int matKey = needsMaterialSplit ? currentMtlId : 0;
                 detail::VertexKey key{posIndex, vtIndex, vnIndex, matKey};
                 auto it = vertexMap.find(key);
                 if (it != vertexMap.end()) {
@@ -454,6 +547,10 @@ load_obj(const std::string &path,
                     }
                 }
 
+                if (hasRoughness) {
+                    vertices.push_back(currentMtlRoughness);
+                }
+
                 vertexMap.emplace(key, newIndex);
                 return newIndex;
             };
@@ -476,7 +573,7 @@ load_obj(const std::string &path,
     }
 
     Mesh mesh(vertices, indices, hasNormals, hasColors, hasTexcoords, minX,
-              maxX, minY, maxY, minZ, maxZ);
+              maxX, minY, maxY, minZ, maxZ, hasRoughness);
     return mesh;
 }
 

@@ -4,12 +4,14 @@ layout (location = 0) in vec3 aPos;
 layout (location = 1) in vec3 aNormal;
 layout (location = 2) in vec3 aColor;
 layout (location = 3) in vec2 aTexCoord;
+layout (location = 4) in float aRoughness;
 
 out VS_OUT {
   vec3 FragPos;
   vec3 Normal;
   vec3 Color;
   vec2 TexCoord;
+  float Roughness;
 } vs_out;
 
 uniform mat4 model;
@@ -24,6 +26,7 @@ void main() {
 
   vs_out.Color = aColor;
   vs_out.TexCoord = aTexCoord;
+  vs_out.Roughness = aRoughness;
 
   gl_Position = camera * worldPos;
 }

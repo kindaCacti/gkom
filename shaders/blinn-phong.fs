@@ -7,6 +7,7 @@ in VS_OUT {
   vec3 Normal;
   vec3 Color;
   vec2 TexCoord;
+  float Roughness;
 } fs_in;
 
 uniform vec3 viewPos;
@@ -52,7 +53,9 @@ void main() {
 
   vec3 V = normalize(viewPos - fs_in.FragPos);
 
-  float r = max(roughness, 0.001);
+  // Prefer per-vertex roughness if provided; otherwise use the uniform.
+  float effectiveRoughness = (fs_in.Roughness > 0.0) ? fs_in.Roughness : roughness;
+  float r = max(effectiveRoughness, 0.001);
   // Map roughness -> Blinn-Phong shininess.
   float shininess = clamp(2.0 / (r * r) - 2.0, 1.0, 256.0);
 
