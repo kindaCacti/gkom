@@ -3,7 +3,6 @@
 
 #include <vector>
 #include <glm/glm.hpp>
-
 #include "./entities/bullet.h"
 #include "defines.h"
 #include "globals.h"
@@ -76,14 +75,24 @@ class BulletBuffer {
         }
     }
 
-    int
-    checkActiveBulletCollision(HitboxedDrawableEntity *hitboxedDrawableEntity) {
+    int checkActiveBulletCollision(HitboxedDrawableEntity *target) {
+        if (_activeCount == 0)
+            return -1;
+        // We assume that each bullet's bounding box is the same size, so we can
+        // precompute the sum of the containing sphere radii.
+        const float max_dist = _elements[0]->containingSphereRadius() +
+                               target->containingSphereRadius();
+        const float md2 =
+            max_dist * max_dist; // Compare squared distances to avoid sqrt
         for (size_t i = 0; i < _activeCount; i++) {
-            if (_elements[i]->get_pos().x * _elements[i]->get_pos().x +
-                    _elements[i]->get_pos().z * _elements[i]->get_pos().z >=
-                AREA_RADIUS_SQ + 100.0f)
+            // Cheap bb reject before expensive intersection calculation.
+            const glm::vec3 d = _elements[i]->get_pos() - target->get_pos();
+            const float d2 = d.x * d.x + d.y * d.y + d.z * d.z;
+            if (d2 > md2) // No collision possible
                 continue;
-            if (_elements[i]->intersects(hitboxedDrawableEntity))
+
+            // Precise check:
+            if (_elements[i]->intersects(target))
                 return (int)i;
         }
         return -1;

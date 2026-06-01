@@ -1,6 +1,8 @@
 #ifndef ENTITIES_ENTITY_H
 #define ENTITIES_ENTITY_H
 
+#include <algorithm>
+
 #include "../shaders/shader_s.h"
 #include "../utils.h"
 #include "../shapes/shape.h"
@@ -133,6 +135,15 @@ class HitboxedDrawableEntity : public virtual DrawableEntity {
     }
 
     ~HitboxedDrawableEntity() = default;
+
+    // Fast broad-phase radius (no sqrt).
+    // Conservative: the farthest corner distance is <= sqrt(3)*maxHalfExtent.
+    float containingSphereRadius() const {
+        const float maxHalfExtent =
+            std::max({_hitbox_size.x, _hitbox_size.y, _hitbox_size.z});
+        // sqrt(3) ≈ 1.7320508
+        return 1.7320508f * maxHalfExtent;
+    }
 
     float bottom_x() { return _pos.x - _hitbox_size.x; }
     float bottom_y() { return _pos.y - _hitbox_size.y; }
