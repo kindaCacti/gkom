@@ -22,6 +22,6 @@
 
 #define PLAYER_ASSET_NAME "teapot"
 #define EMMITER_ASSET_NAME "cube"
-#define BULLET_ASSET_NAME "cube"
+#define BULLET_ASSET_NAME "droplet"
 
 #endif
