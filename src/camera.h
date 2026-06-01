@@ -158,6 +158,8 @@ class Camera {
         dir.z = 0.f;
         return glm::normalize(dir);
     }
+    const glm::mat4 &getViewMatrix() const { return viewMatrix; }
+    const glm::mat4 &getProjectionMatrix() const { return projectionMatrix; }
 };
 
 #endif // CAMERA_H

@@ -11,8 +11,9 @@
 #include "../utils.h"
 #include "../textures/texture.h"
 #include "../shaders/shader_params.h"
+#include"../globals.h"
 
-class Shape {
+struct Shape {
     const std::weak_ptr<Mesh> mesh; // Pointer to shared GPU data
     std::optional<glm::vec3> colorOverride;
     std::weak_ptr<Texture> baseColor;
@@ -20,7 +21,6 @@ class Shape {
     float metallic = 0.0f;
     float specular = 0.5f;
 
-  public:
     Transform transform;
 
     Shape(const std::shared_ptr<Mesh> &m) : mesh(m) {}
@@ -41,6 +41,7 @@ class Shape {
             return;
         }
 
+        glUseProgram(shader.ID);
         const bool shouldRestoreColorAttrib = meshShared->hasColors;
         if (colorOverride.has_value()) {
             const glm::vec3 &c = colorOverride.value();
@@ -61,6 +62,8 @@ class Shape {
         }
         shader_utils::set_blinn_phong_material_uniforms(shader, roughness,
                                                         metallic, specular);
+
+        gameStateData.addDrawCall();
         glDrawElements(GL_TRIANGLES, meshShared->indexCount, GL_UNSIGNED_INT,
                        0);
         if (auto texShared = baseColor.lock()) {

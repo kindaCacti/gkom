@@ -21,14 +21,29 @@ const GameControlsMode CONTROLS_MODE = TOP_DOWN;
 #include <list>
 
 #include "camera.h"
-#include "./entities/player.h"
-#include "./entities/emiter.h"
+#include "entities/player.h"
+#include "entities/emiter.h"
 #include "defines.h"
 #include "shaders/shader_s.h"
 #include "shaders/utils.h"
 #include "textures/texture_factory.h"
 #include "textures/texture.h"
-#include "./bullet_buffer.h"
+#include "bullet_buffer.h"
+#include "text/text.h"
+#include "text/text_data.h"
+
+struct ShaderBundle {
+    std::shared_ptr<Shader> gameShader;
+    std::shared_ptr<Shader> textShader;
+    std::shared_ptr<Shader> instancedShader;
+};
+
+struct GameSettings {
+    bool instancingOn = IS_INSTANCED;
+    bool benchmarkOn = BENCHMARK_ON;
+    int startingEmmitersCount = 1;
+    float addEmmiterAfterTime = 1.0f;
+};
 
 struct Game {
     Camera cam;
@@ -38,14 +53,19 @@ struct Game {
     BulletBuffer bulletBuffer;
     ShapeFactory shapeFactory;
     TextureFactory textureFactory;
-    std::shared_ptr<Shader> shader;
+    ShaderBundle shaders;
     std::unique_ptr<Shape> axes[3]; // for debugging
     float deltaTime = 0.f;
     float currentFrameTime = static_cast<float>(glfwGetTime());
     float lastFrameTime = static_cast<float>(glfwGetTime());
+    TextRenderer Text;
+    GameSettings settings;
+
 
     Game() { loadAssets(); }
 
+    void setupGame();
+    int loadFont();
     void updateScene();
     void drawScene();
     void doFramePreprocessing();
@@ -59,11 +79,19 @@ struct Game {
     void snapPlayerIntoArea();
     void shootIfTime(float speed);
     void moveRemoveBullets();
+    void setupLights();
+    void setupAxes();
+    void setupTable();
+    void setupScene();
     void setupDefaultScene();
+    void setupBenchmarkScene();
     void updateCamera();
     void checkPlayerCollision();
     void drawEntities();
     void printStats();
+    void drawText(TextData& text);
+    void bundledDrawText(std::vector<TextData>& texts);
+    void drawBulletsInstanced();
 
     void onFramebufferResize(GLFWwindow *window, int width, int height) {
         glViewport(0, 0, width, height);
@@ -74,6 +102,7 @@ struct Game {
     void onMouseMove(GLFWwindow *window, double xpos, double ypos) {
         cam.onMouseMove(xpos, ypos);
     }
+
 
     ~Game() = default;
 };

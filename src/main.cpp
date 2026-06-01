@@ -20,7 +20,11 @@
 #include "entities/player.h"
 #include "defines.h"
 #include "input.h"
+#include "text/text.h"
+#include "state.h"
+#include "globals.h"
 // settings
+
 
 int main() {
     glfwInit();
@@ -67,11 +71,18 @@ int main() {
                 }
             });
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-        game.setupDefaultScene();
+        game.setupScene();
 
+        if(game.loadFont()) {
+            return -1;
+        }
+
+        glEnable(GL_BLEND);
         glEnable(GL_DEPTH_TEST);
-        while (!glfwWindowShouldClose(window)) {
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+        while (!glfwWindowShouldClose(window)) {
+            gameStateData.newFrame();
             game.doFramePreprocessing();
             processInput(window, game, game.deltaTime);
             game.updateScene();
