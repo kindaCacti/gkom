@@ -19,8 +19,8 @@ class Bullet : public HitboxedDrawableEntity {
 
   public:
     Bullet(std::unique_ptr<Shape> &&shape, float speed, glm::vec3 &direction)
-        : HitboxedDrawableEntity(std::move(shape)), _speed(speed),
-          _direction(direction) {}
+        : DrawableEntity(std::move(shape)), HitboxedDrawableEntity(nullptr),
+          _speed(speed), _direction(direction) {}
     Bullet(const Bullet &) = default;
     Bullet(Bullet &&) = default;
     Bullet &operator=(Bullet &&bullet) = default;

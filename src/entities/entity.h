@@ -108,7 +108,7 @@ class DrawableEntity : public Entity {
     virtual ~DrawableEntity() = default;
 };
 
-class HitboxedDrawableEntity : public DrawableEntity {
+class HitboxedDrawableEntity : public virtual DrawableEntity {
   protected:
     glm::vec3 _hitbox_size;
 
@@ -126,7 +126,11 @@ class HitboxedDrawableEntity : public DrawableEntity {
                                      _shape->transform.getScale().z)) {}
     HitboxedDrawableEntity(HitboxedDrawableEntity &&) = default;
 
-    HitboxedDrawableEntity &operator=(HitboxedDrawableEntity &&) = default;
+    HitboxedDrawableEntity &operator=(HitboxedDrawableEntity &&other) noexcept {
+        if (this != &other)
+            _hitbox_size = std::move(other._hitbox_size);
+        return *this;
+    }
 
     ~HitboxedDrawableEntity() = default;
 
