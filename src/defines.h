@@ -20,7 +20,7 @@
 #define PLAYER_AREA_RADIUS 10.0f
 #define MAX_ANGLE_CHANGE_PER_SECOND 10.0f
 
-#define PLAYER_ASSET_NAME "teapot"
+#define PLAYER_ASSET_NAME "teapot2"
 #define EMMITER_ASSET_NAME "cube"
 #define BULLET_ASSET_NAME "droplet"
 

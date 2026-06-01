@@ -70,6 +70,10 @@ void Game::loadAssets() {
         std::make_shared<Texture>(Texture::newNoise2D(512, 512)), "noise");
     shapeFactory.registerMesh("../assets/teapot.obj", "teapot",
                               glm::vec3(0.8f, 0.5f, 0.2f));
+    shapeFactory.registerMesh("../assets/teapot2.obj", "teapot2");
+    textureFactory.registerTexture(
+        std::make_shared<Texture>(Texture::fromFile("../assets/teapot2.png")),
+        "teapot2");
 
     shapeFactory.registerMesh("../assets/espresso.obj",
                               Enemy::getAssetName(ESPRESSO));
@@ -98,12 +102,13 @@ void Game::loadAssets() {
 
 void Game::spawnPlayer() {
     auto player_asset = shapeFactory.createShape(PLAYER_ASSET_NAME);
-    player_asset->transform.scale(glm::vec3(0.4f));
+    player_asset->transform.scale(glm::vec3(8.f));
     player_asset->transform.translate(glm::vec3(0.f, 0.f, 0.f));
-    player_asset->transform.rotate(180.f, glm::vec3(0.f, 0.f, 1.f));
-    if (auto noise = textureFactory.createTexture("noise").lock()) {
-        player_asset->bindTextureBaseColor(noise);
+    player_asset->transform.rotate(90.f, glm::vec3(0.f, 0.f, 1.f));
+    if (auto tex = textureFactory.createTexture("teapot2").lock()) {
+        player_asset->bindTextureBaseColor(tex);
     }
+    player_asset->setRoughness(0.3f);
     player = std::make_shared<Player>(Player(std::move(player_asset)));
 }
 
