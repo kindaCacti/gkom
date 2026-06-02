@@ -44,6 +44,7 @@ struct GameSettings {
     bool benchmarkOn = BENCHMARK_ON;
     int startingEmmitersCount = 1;
     float addEmmiterAfterTime = 1.0f;
+    bool showHitboxes = false;
 };
 
 struct Game {
@@ -52,6 +53,7 @@ struct Game {
     std::vector<std::shared_ptr<Plate>> plates;
     std::list<std::shared_ptr<emiter>> emiters;
     std::vector<std::shared_ptr<Shape>> shapes;
+    std::unique_ptr<Shape> hitboxShape;
     BulletBuffer bulletBuffer;
     ShapeFactory shapeFactory;
     TextureFactory textureFactory;
@@ -93,6 +95,7 @@ struct Game {
     void setupBenchmarkScene();
     void updateCamera();
     void checkPlayerCollision();
+    void checkPlateCollision();
     void drawEntities();
     void printStats();
     void drawText(TextData &text);

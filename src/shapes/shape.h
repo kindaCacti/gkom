@@ -4,6 +4,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include <functional>
 #include <optional>
 #include <memory>
 
@@ -21,10 +22,62 @@ struct Shape {
     float roughness = 0.4f;
     float metallic = 0.0f;
     float specular = 0.5f;
+    glm::vec3 minBounds, maxBounds;
+
+    std::function<void()> onBoundsUpdated;
 
     Transform transform;
 
-    Shape(const std::shared_ptr<Mesh> &m) : mesh(m) {}
+    Shape(const std::shared_ptr<Mesh> &m)
+        : mesh(m), transform([this]() { onTransformUpdated(); }) {
+        if (auto meshShared = mesh.lock()) {
+            minBounds =
+                glm::vec3(meshShared->minX, meshShared->minY, meshShared->minZ);
+            maxBounds =
+                glm::vec3(meshShared->maxX, meshShared->maxY, meshShared->maxZ);
+        }
+    }
+
+    void updateBounds(const glm::mat4 &parentTransform) {
+        auto meshShared = mesh.lock();
+        if (!meshShared) {
+            return;
+        }
+        glm::vec3 corners[8] = {
+            {meshShared->minX, meshShared->minY, meshShared->minZ},
+            {meshShared->maxX, meshShared->minY, meshShared->minZ},
+            {meshShared->minX, meshShared->maxY, meshShared->minZ},
+            {meshShared->maxX, meshShared->maxY, meshShared->minZ},
+            {meshShared->minX, meshShared->minY, meshShared->maxZ},
+            {meshShared->maxX, meshShared->minY, meshShared->maxZ},
+            {meshShared->minX, meshShared->maxY, meshShared->maxZ},
+            {meshShared->maxX, meshShared->maxY, meshShared->maxZ},
+        };
+        glm::vec3 transformedMin(FLT_MAX);
+        glm::vec3 transformedMax(-FLT_MAX);
+        for (const auto &corner : corners) {
+            glm::vec4 transformedCorner = parentTransform *
+                                          transform.getMatrix() *
+                                          glm::vec4(corner, 1.0f);
+            transformedMin =
+                glm::min(transformedMin, glm::vec3(transformedCorner));
+            transformedMax =
+                glm::max(transformedMax, glm::vec3(transformedCorner));
+        }
+        minBounds = transformedMin;
+        maxBounds = transformedMax;
+    }
+
+    void onTransformUpdated() {
+        updateBounds(glm::mat4(1.0f));
+        if (onBoundsUpdated) {
+            onBoundsUpdated();
+        }
+    }
+
+    void setOnBoundsUpdated(std::function<void()> callback) {
+        onBoundsUpdated = std::move(callback);
+    }
 
     void setColorOverride(const glm::vec3 &color) { colorOverride = color; }
 
@@ -41,6 +94,11 @@ struct Shape {
     void setSpecular(float s) { specular = s; }
 
     void draw(Shader &shader, const glm::mat4 &parentTransform) const {
+        draw(shader, parentTransform, GL_TRIANGLES);
+    }
+
+    void draw(Shader &shader, const glm::mat4 &parentTransform,
+              GLenum primitiveMode) const {
         auto meshShared = mesh.lock();
         if (!meshShared) {
             return;
@@ -78,7 +136,7 @@ struct Shape {
                                                         metallic, specular);
 
         gameStateData.addDrawCall();
-        glDrawElements(GL_TRIANGLES, meshShared->indexCount, GL_UNSIGNED_INT,
+        glDrawElements(primitiveMode, meshShared->indexCount, GL_UNSIGNED_INT,
                        0);
         if (auto texShared = baseColor.lock()) {
             texShared->unbind(BASE_COLOR_TEXTURE_UNIT);
@@ -93,11 +151,11 @@ struct Shape {
         }
     }
 
-    float minX() { return mesh.lock()->minX; }
-    float minY() { return mesh.lock()->minY; }
-    float minZ() { return mesh.lock()->minZ; }
-    float maxX() { return mesh.lock()->maxX; }
-    float maxY() { return mesh.lock()->maxY; }
-    float maxZ() { return mesh.lock()->maxZ; }
+    float minX() { return minBounds.x; }
+    float minY() { return minBounds.y; }
+    float minZ() { return minBounds.z; }
+    float maxX() { return maxBounds.x; }
+    float maxY() { return maxBounds.y; }
+    float maxZ() { return maxBounds.z; }
 };
 #endif

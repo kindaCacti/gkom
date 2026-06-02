@@ -46,6 +46,7 @@ void Game::updateScene() {
     }
     shootIfTime(BULLET_SPEED);
     moveRemoveBullets();
+    checkPlateCollision();
     checkPlayerCollision();
     updateCamera();
 }
@@ -95,6 +96,16 @@ void Game::loadAssets() {
     }
 
     shapeFactory.registerCube();
+
+    // Reusable wireframe cube for hitboxes (12 edges), owned by Game.
+    shapeFactory.registerWireCube();
+    hitboxShape =
+        shapeFactory.createShape("hitbox_cube", glm::vec3(0.0f, 1.0f, 0.0f));
+    if (hitboxShape) {
+        hitboxShape->setRoughness(1.0f);
+        hitboxShape->setMetallic(0.0f);
+        hitboxShape->setSpecular(0.0f);
+    }
 
     bulletBuffer.setupInstancedDrawing(
         shapeFactory.createShape(BULLET_ASSET_NAME)->mesh.lock()->VAO,
@@ -330,12 +341,29 @@ void Game::checkPlayerCollision() {
     }
 }
 
+void Game::checkPlateCollision() {
+    if (gameSettings.is_benchmark)
+        return;
+
+    for (auto &plate : plates) {
+        for (int bulletId :
+             bulletBuffer.checkActiveBulletCollision(plate.get())) {
+            bulletBuffer.deactivateElement(static_cast<size_t>(bulletId));
+        }
+    }
+}
+
 void Game::drawEntities() {
     shaders.gameShader->use();
-    player->drawHitbox(*shaders.gameShader);
+    if (hitboxShape && settings.showHitboxes) {
+        player->drawHitbox(*shaders.gameShader, *hitboxShape);
+    }
     player->draw(*shaders.gameShader);
     for (auto &plate : plates) {
         plate->draw(*shaders.gameShader);
+        if (hitboxShape && settings.showHitboxes) {
+            plate->drawHitbox(*shaders.gameShader, *hitboxShape);
+        }
     }
     for (auto &emiter : emiters) {
         emiter->draw(*shaders.gameShader);

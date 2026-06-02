@@ -37,7 +37,18 @@ void processInput(GLFWwindow *window, Game &game, float deltaTime) {
     if (isPressed(window, KEYBIND_MOVE_RIGHT))
         game.player->move(right_dir.x, right_dir.y, right_dir.z);
 
-    if (glfwGetMouseButton(window, KEYBIND_PLACE_PLATE) == GLFW_PRESS) {
+    if (glfwGetMouseButton(window, KEYBIND_MOVE_PLATE) == GLFW_PRESS) {
         game.movePlate();
+    }
+    if (isPressed(window, KEYBIND_RESET)) {
+        for (auto &plate : game.plates) {
+            plate->setPosition(0.f, 0.f, 0.f);
+            plate->setRotation(0.f, 0.f, 0.f);
+        }
+        game.player->setPosition(0.f, 0.f, 0.f);
+        game.player->setRotation(0.f, 0.f, 0.f);
+    }
+    if (isPressed(window, KEYBIND_SHOW_HITBOXES)) {
+        game.settings.showHitboxes = !game.settings.showHitboxes;
     }
 }

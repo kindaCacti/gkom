@@ -105,7 +105,9 @@ class DrawableEntity : public Entity {
         return T * R * S * _shape->transform.getMatrix();
     }
 
-    void setShape(std::unique_ptr<Shape> &&shape) { _shape = std::move(shape); }
+    virtual void setShape(std::unique_ptr<Shape> &&shape) {
+        _shape = std::move(shape);
+    }
 
     virtual ~DrawableEntity() = default;
 };
@@ -113,24 +115,54 @@ class DrawableEntity : public Entity {
 class HitboxedDrawableEntity : public virtual DrawableEntity {
   protected:
     glm::vec3 _hitbox_size;
+    glm::vec3 _hitbox_center_offset;
+
+    void updateHitboxFromShape() {
+        if (!_shape) {
+            _hitbox_size = glm::vec3(0.0f);
+            _hitbox_center_offset = glm::vec3(0.0f);
+            return;
+        }
+        const glm::vec3 minB(_shape->minX(), _shape->minY(), _shape->minZ());
+        const glm::vec3 maxB(_shape->maxX(), _shape->maxY(), _shape->maxZ());
+        _hitbox_center_offset = (minB + maxB) * 0.5f;
+        _hitbox_size = (maxB - minB) * 0.5f;
+    }
+
+    void attachShapeBoundsCallback() {
+        if (!_shape) {
+            return;
+        }
+        _shape->setOnBoundsUpdated([this]() { updateHitboxFromShape(); });
+    }
 
   public:
     HitboxedDrawableEntity(std::unique_ptr<Shape> &&shape,
                            glm::vec3 hitbox_size)
-        : DrawableEntity(std::move(shape)), _hitbox_size(hitbox_size) {}
+        : DrawableEntity(std::move(shape)), _hitbox_size(hitbox_size),
+          _hitbox_center_offset(0.0f) {
+        attachShapeBoundsCallback();
+        updateHitboxFromShape();
+    }
     HitboxedDrawableEntity(std::unique_ptr<Shape> &&shape)
-        : DrawableEntity(std::move(shape)),
-          _hitbox_size(glm::vec3((_shape->maxX() - _shape->minX()) / 2.f *
-                                     _shape->transform.getScale().x,
-                                 (_shape->maxY() - _shape->minY()) / 2.f *
-                                     _shape->transform.getScale().y,
-                                 (_shape->maxZ() - _shape->minZ()) / 2.f *
-                                     _shape->transform.getScale().z)) {}
+        : DrawableEntity(std::move(shape)), _hitbox_size(0.0f),
+          _hitbox_center_offset(0.0f) {
+        attachShapeBoundsCallback();
+        updateHitboxFromShape();
+    }
+
+    void setShape(std::unique_ptr<Shape> &&shape) override {
+        DrawableEntity::setShape(std::move(shape));
+        attachShapeBoundsCallback();
+        updateHitboxFromShape();
+    }
     HitboxedDrawableEntity(HitboxedDrawableEntity &&) = default;
 
     HitboxedDrawableEntity &operator=(HitboxedDrawableEntity &&other) noexcept {
-        if (this != &other)
+        if (this != &other) {
             _hitbox_size = std::move(other._hitbox_size);
+            _hitbox_center_offset = std::move(other._hitbox_center_offset);
+        }
         return *this;
     }
 
@@ -145,12 +177,24 @@ class HitboxedDrawableEntity : public virtual DrawableEntity {
         return 1.7320508f * maxHalfExtent;
     }
 
-    float bottom_x() { return _pos.x - _hitbox_size.x; }
-    float bottom_y() { return _pos.y - _hitbox_size.y; }
-    float bottom_z() { return _pos.z - _hitbox_size.z; }
-    float top_x() { return _pos.x + _hitbox_size.x; }
-    float top_y() { return _pos.y + _hitbox_size.y; }
-    float top_z() { return _pos.z + _hitbox_size.z; }
+    float bottom_x() {
+        return (_pos.x + _hitbox_center_offset.x) - _hitbox_size.x;
+    }
+    float bottom_y() {
+        return (_pos.y + _hitbox_center_offset.y) - _hitbox_size.y;
+    }
+    float bottom_z() {
+        return (_pos.z + _hitbox_center_offset.z) - _hitbox_size.z;
+    }
+    float top_x() {
+        return (_pos.x + _hitbox_center_offset.x) + _hitbox_size.x;
+    }
+    float top_y() {
+        return (_pos.y + _hitbox_center_offset.y) + _hitbox_size.y;
+    }
+    float top_z() {
+        return (_pos.z + _hitbox_center_offset.z) + _hitbox_size.z;
+    }
 
     bool check_3D_collision(HitboxedDrawableEntity *other) {
         auto matA = getHitboxTransformMatrix();
@@ -291,17 +335,13 @@ class HitboxedDrawableEntity : public virtual DrawableEntity {
     glm::mat4 getHitboxTransformMatrix() const {
         glm::mat4 T = glm::translate(glm::mat4(1.0f), _pos);
         glm::mat4 R = getEulerRotationMatrix(_rot);
+        glm::mat4 C = glm::translate(glm::mat4(1.0f), _hitbox_center_offset);
         glm::mat4 S = glm::scale(glm::mat4(1.0f), _hitbox_size * 2.0f);
-        return T * R * S;
+        return T * R * C * S;
     }
 
-    virtual void drawHitbox(Shader &shader) {
-        glm::mat4 model = getHitboxTransformMatrix();
-        unsigned int modelLoc = glGetUniformLocation(shader.ID, "model");
-        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    virtual void drawHitbox(Shader &shader, const Shape &hitboxShape) {
+        hitboxShape.draw(shader, getHitboxTransformMatrix(), GL_LINES);
     }
 };
 
