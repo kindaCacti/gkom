@@ -131,6 +131,7 @@ target_include_directories(gkom PRIVATE includes/stb)
 
 add_library(glm INTERFACE)
 target_include_directories(glm INTERFACE includes/glm)
+target_compile_definitions(glm INTERFACE GLM_ENABLE_EXPERIMENTAL)
 
 # Link your dependencies
 target_link_libraries(gkom 
