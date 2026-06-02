@@ -78,6 +78,9 @@ texture:
   - name: "kitchen_roughness"
     path: "../assets/kitchenRoughness.png"
 
+  - name: "plate_diffuse"
+    path: "../assets/plateDiffuse.png"
+
 shader:
   game_shader:
     vertex: "../shaders/blinn-phong.vs"
@@ -97,4 +100,4 @@ default_settings:
     height: 600
     title: "Coffee Invaders"
   is_instanced: true
-  is_benchmark: true
+  is_benchmark: false
