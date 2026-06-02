@@ -1,6 +1,7 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
+#include <glm/gtx/norm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <memory>
@@ -19,6 +20,7 @@
 #include "text/text.h"
 #include "globals.h"
 #include "entities/enemy.h"
+#include "entities/plate.h"
 
 void Game::setupGame() {}
 
@@ -37,12 +39,14 @@ void Game::updateScene() {
     snapPlayerIntoArea();
     // removeOutOfBoundsBullets();
     while (currentFrameTime / emiters.size() >
-           (gameSettings.is_benchmark ? BENCHMARK_SPAWNING_NEW_EMMITERS_AFTER_TIME
-                                 : SPAWNING_NEW_EMMITERS_AFTER_TIME)) {
+           (gameSettings.is_benchmark
+                ? BENCHMARK_SPAWNING_NEW_EMMITERS_AFTER_TIME
+                : SPAWNING_NEW_EMMITERS_AFTER_TIME)) {
         spawnRandomemiter();
     }
     shootIfTime(BULLET_SPEED);
     moveRemoveBullets();
+    checkPlateCollision();
     checkPlayerCollision();
     updateCamera();
 }
@@ -57,15 +61,20 @@ void Game::doFramePreprocessing() {
 }
 
 void Game::loadShaders() {
-    shaders.gameShader = std::make_shared<Shader>(gameSettings.gameShader.vertexShader.c_str(),
-                                                  gameSettings.gameShader.fragmentShader.c_str());
-    shaders.textShader =
-        std::make_shared<Shader>(gameSettings.textShader.vertexShader.c_str(), gameSettings.textShader.fragmentShader.c_str());
+    shaders.gameShader = std::make_shared<Shader>(
+        gameSettings.gameShader.vertexShader.c_str(),
+        gameSettings.gameShader.fragmentShader.c_str());
+    shaders.textShader = std::make_shared<Shader>(
+        gameSettings.textShader.vertexShader.c_str(),
+        gameSettings.textShader.fragmentShader.c_str());
     shaders.instancedShader = std::make_shared<Shader>(
-        gameSettings.instancedShader.vertexShader.c_str(), gameSettings.instancedShader.fragmentShader.c_str());
+        gameSettings.instancedShader.vertexShader.c_str(),
+        gameSettings.instancedShader.fragmentShader.c_str());
 }
 
-void Game::registerMeshAsset(std::string&& name, std::string&& path, Transform&& transform, std::optional<glm::vec3> color) {
+void Game::registerMeshAsset(std::string &&name, std::string &&path,
+                             Transform &&transform,
+                             std::optional<glm::vec3> color) {
     shapeFactory.registerMesh(path, name, color);
     shapeFactory.registerTransform(name, Transform());
 }
@@ -74,20 +83,29 @@ void Game::loadAssets() {
     textureFactory.registerTexture(
         std::make_shared<Texture>(Texture::newNoise2D(512, 512)), "noise");
 
-    for (const auto& mesh : gameSettings.meshes){
+    for (const auto &mesh : gameSettings.meshes) {
         shapeFactory.registerMesh(mesh.path, mesh.name, mesh.colorOverride);
         shapeFactory.registerTransform(mesh.name, mesh.transform);
     }
 
     std::cout << gameSettings.textures.size() << std::endl;
-    for(const auto& texture : gameSettings.textures) {
+    for (const auto &texture : gameSettings.textures) {
         textureFactory.registerTexture(
             std::make_shared<Texture>(Texture::fromFile(texture.path)),
-            texture.name
-        );
+            texture.name);
     }
-    
+
     shapeFactory.registerCube();
+
+    // Reusable wireframe cube for hitboxes (12 edges), owned by Game.
+    shapeFactory.registerWireCube();
+    hitboxShape =
+        shapeFactory.createShape("hitbox_cube", glm::vec3(0.0f, 1.0f, 0.0f));
+    if (hitboxShape) {
+        hitboxShape->setRoughness(1.0f);
+        hitboxShape->setMetallic(0.0f);
+        hitboxShape->setSpecular(0.0f);
+    }
 
     bulletBuffer.setupInstancedDrawing(
         shapeFactory.createShape(BULLET_ASSET_NAME)->mesh.lock()->VAO,
@@ -104,6 +122,73 @@ void Game::spawnPlayer() {
     }
     player_asset->setRoughness(0.3f);
     player = std::make_shared<Player>(Player(std::move(player_asset)));
+}
+
+void Game::spawnPlates() {
+    {
+        auto plate_asset = shapeFactory.createShape("plate");
+        if (auto tex =
+                textureFactory.createTexture("plate_diffuse_green").lock()) {
+            plate_asset->bindTextureBaseColor(tex);
+        }
+        plate_asset->setRoughness(0.3f);
+        auto plate = std::make_shared<Plate>(std::move(plate_asset));
+        plates.push_back(plate);
+    }
+    {
+        auto plate_asset = shapeFactory.createShape("plate");
+        if (auto tex =
+                textureFactory.createTexture("plate_diffuse_red").lock()) {
+            plate_asset->bindTextureBaseColor(tex);
+        }
+        plate_asset->setRoughness(0.3f);
+        auto plate = std::make_shared<Plate>(std::move(plate_asset));
+        plate->setPosition(glm::vec3(5.f, 5.f, 0.f));
+        plates.push_back(plate);
+    }
+    {
+        auto plate_asset = shapeFactory.createShape("plate");
+        if (auto tex =
+                textureFactory.createTexture("plate_diffuse_blue").lock()) {
+            plate_asset->bindTextureBaseColor(tex);
+        }
+        plate_asset->setRoughness(0.3f);
+        auto plate = std::make_shared<Plate>(std::move(plate_asset));
+        plate->setPosition(glm::vec3(5.f, 5.f, 0.2f));
+        plates.push_back(plate);
+    }
+}
+
+void Game::movePlate() {
+    // find nearest palte to the player
+    auto base = player->get_pos() +
+                glm::vec3(0.f, 0.f, 1.2f); // slightly above the player
+    auto dir = cam.getXYDirection();
+    auto nose =
+        base +
+        dir *
+            1.f; // point in front of the player where the plate should move to
+    std::shared_ptr<Plate> plate = nullptr;
+    float min_dist_sq = std::numeric_limits<float>::max();
+    for (const auto &p : plates) {
+        float dist_sq = glm::distance2(p->get_pos(), nose);
+        if (dist_sq < min_dist_sq) {
+            min_dist_sq = dist_sq;
+            plate = p;
+        }
+    }
+    if (!plate ||
+        min_dist_sq > 4.0f) { // if no plate is close enough, do nothing
+        return;
+    }
+    // move the plate in front of the palyer as a shield
+    auto offset = dir * 1.5f; // distance from player
+    plate->setPosition(base + offset);
+    // rotate the plate to face the player
+    float angle = std::atan2(dir.y, dir.x);
+    plate->setRotation(glm::vec3(-90.f, 0.f, glm::degrees(angle) + 90.f));
+    // rotate plate 90 degrees to be vertical
+    // plate->rotate(glm::vec3(90.f, 0.f, 0.f));
 }
 
 void Game::spawnEmiter(float time_between_shots, glm::vec3 position,
@@ -123,10 +208,9 @@ void Game::spawnRandomemiter() {
         std::sqrt(AREA_RADIUS_SQ) * 0.8f; // Spawn within 80% of the area radius
     glm::vec3 position =
         glm::vec3(cos(angle) * radius, sin(angle) * radius, 0.f);
-    glm::vec3 rotation = glm::vec3(
-        0.f, 0.f,
-        glm::degrees(angle) + 180.0f +
-            getRandomFloatBetween(-10.f, 10.f));
+    glm::vec3 rotation = glm::vec3(0.f, 0.f,
+                                   glm::degrees(angle) + 180.0f +
+                                       getRandomFloatBetween(-10.f, 10.f));
     spawnEmiter(0.5f, position, rotation);
 }
 
@@ -157,19 +241,20 @@ void Game::moveRemoveBullets() {
 
 void Game::setupLights() {
     BlinnPhongParameters bpp;
+    float strength = 500.0f;
     bpp.num_lights = 4;
     bpp.light_pos[0] = glm::vec3(-10.f, 20.0f, 10.0f);
     bpp.light_color[0] = glm::vec3(1.0f, 1.0f, 1.0f);
-    bpp.light_strength[0] = 1000.0f;
+    bpp.light_strength[0] = strength;
     bpp.light_pos[1] = glm::vec3(10.f, 20.0f, 10.0f);
     bpp.light_color[1] = glm::vec3(1.0f, 1.0f, 1.0f);
-    bpp.light_strength[1] = 1000.0f;
+    bpp.light_strength[1] = strength;
     bpp.light_pos[2] = glm::vec3(-10.f, -20.0f, 10.0f);
     bpp.light_color[2] = glm::vec3(1.0f, 1.0f, 1.0f);
-    bpp.light_strength[2] = 1000.0f;
+    bpp.light_strength[2] = strength;
     bpp.light_pos[3] = glm::vec3(10.f, -20.0f, 10.0f);
     bpp.light_color[3] = glm::vec3(1.0f, 1.0f, 1.0f);
-    bpp.light_strength[3] = 1000.0f;
+    bpp.light_strength[3] = strength;
 
     shaders.gameShader->use();
     shader_utils::set_blinn_phong_uniforms(*shaders.gameShader, bpp);
@@ -239,6 +324,7 @@ void Game::setupDefaultScene() {
     shaders.gameShader->use();
     setupLights();
     spawnPlayer();
+    spawnPlates();
     for (int i = 0; i < 5; ++i) {
         spawnRandomemiter();
     }
@@ -255,6 +341,7 @@ void Game::setupBenchmarkScene() {
     shaders.gameShader->use();
     setupLights();
     spawnPlayer();
+    spawnPlates();
     player->setPosition(2.f, 0.f, 0.f);
     setupTable();
     cam.setAspectRatio(static_cast<float>(gameSettings.windowWidth) /
@@ -283,10 +370,30 @@ void Game::checkPlayerCollision() {
     }
 }
 
+void Game::checkPlateCollision() {
+    if (gameSettings.is_benchmark)
+        return;
+
+    for (auto &plate : plates) {
+        for (int bulletId :
+             bulletBuffer.checkActiveBulletCollision(plate.get())) {
+            bulletBuffer.deactivateElement(static_cast<size_t>(bulletId));
+        }
+    }
+}
+
 void Game::drawEntities() {
     shaders.gameShader->use();
-    player->drawHitbox(*shaders.gameShader);
+    if (hitboxShape && settings.showHitboxes) {
+        player->drawHitbox(*shaders.gameShader, *hitboxShape);
+    }
     player->draw(*shaders.gameShader);
+    for (auto &plate : plates) {
+        plate->draw(*shaders.gameShader);
+        if (hitboxShape && settings.showHitboxes) {
+            plate->drawHitbox(*shaders.gameShader, *hitboxShape);
+        }
+    }
     for (auto &emiter : emiters) {
         emiter->draw(*shaders.gameShader);
     }

@@ -4,26 +4,50 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
+#include <functional>
 #include <random>
-
-
 
 class Transform {
     glm::mat4 mat;
+    std::function<void()> onUpdate;
 
   public:
-    Transform() : mat(1.0f) {}
+    Transform(std::function<void()> onUpdateCallback = {})
+        : mat(1.0f), onUpdate(std::move(onUpdateCallback)) {}
 
-    void translate(const glm::vec3 &delta) { mat = glm::translate(mat, delta); }
-    void scale(const glm::vec3 &factor) { mat = glm::scale(mat, factor); }
+    inline void update() {
+        if (onUpdate) {
+            onUpdate();
+        }
+    }
+
+    void setOnUpdate(std::function<void()> onUpdateCallback) {
+        onUpdate = std::move(onUpdateCallback);
+    }
+
+    void setMatrix(const glm::mat4 &matrix) {
+        mat = matrix;
+        update();
+    }
+
+    void translate(const glm::vec3 &delta) {
+        mat = glm::translate(mat, delta);
+        update();
+    }
+    void scale(const glm::vec3 &factor) {
+        mat = glm::scale(mat, factor);
+        update();
+    }
     void rotate(float angleDegrees, const glm::vec3 &axis) {
         mat = glm::rotate(mat, glm::radians(angleDegrees), axis);
+        update();
     }
     void rotateInRespectTo(const glm::vec3 &point, float angleDegrees,
                            const glm::vec3 &axis) {
         mat = glm::translate(glm::mat4(1.0f), point) *
               glm::rotate(glm::mat4(1.0f), glm::radians(angleDegrees), axis) *
               glm::translate(glm::mat4(1.0f), -point) * mat;
+        update();
     }
 
     void setPosition(const glm::vec3 &position) {
@@ -41,6 +65,7 @@ class Transform {
         mat[0] *= currentScale.x;
         mat[1] *= currentScale.y;
         mat[2] *= currentScale.z;
+        update();
     }
     void setRotation(float angleDegrees, const glm::vec3 &axis) {
         // Extract current position and scale
@@ -55,22 +80,28 @@ class Transform {
         mat[0] *= currentScale.x;
         mat[1] *= currentScale.y;
         mat[2] *= currentScale.z;
+        update();
     }
     void setRotation(const glm::vec3 &eulerDegrees) {
         glm::vec3 currentPosition = glm::vec3(mat[3]);
         glm::vec3 currentScale = glm::vec3(glm::length(glm::vec3(mat[0])),
-                                        glm::length(glm::vec3(mat[1])),
-                                        glm::length(glm::vec3(mat[2])));
+                                           glm::length(glm::vec3(mat[1])),
+                                           glm::length(glm::vec3(mat[2])));
 
-        glm::mat4 rotationMat = glm::rotate(glm::mat4(1.0f), glm::radians(eulerDegrees.x), glm::vec3(1.0f, 0.0f, 0.0f));
-        rotationMat           = glm::rotate(rotationMat,           glm::radians(eulerDegrees.y), glm::vec3(0.0f, 1.0f, 0.0f));
-        rotationMat           = glm::rotate(rotationMat,           glm::radians(eulerDegrees.z), glm::vec3(0.0f, 0.0f, 1.0f));
+        glm::mat4 rotationMat =
+            glm::rotate(glm::mat4(1.0f), glm::radians(eulerDegrees.x),
+                        glm::vec3(1.0f, 0.0f, 0.0f));
+        rotationMat = glm::rotate(rotationMat, glm::radians(eulerDegrees.y),
+                                  glm::vec3(0.0f, 1.0f, 0.0f));
+        rotationMat = glm::rotate(rotationMat, glm::radians(eulerDegrees.z),
+                                  glm::vec3(0.0f, 0.0f, 1.0f));
 
         mat = glm::translate(glm::mat4(1.0f), currentPosition) * rotationMat;
-        
+
         mat[0] *= currentScale.x;
         mat[1] *= currentScale.y;
         mat[2] *= currentScale.z;
+        update();
     }
     void setScale(const glm::vec3 &factor) {
         // Extract current position and rotation
@@ -85,6 +116,7 @@ class Transform {
         mat[0] *= factor.x;
         mat[1] *= factor.y;
         mat[2] *= factor.z;
+        update();
     }
 
     glm::vec3 getPosition() const { return glm::vec3(mat[3]); }

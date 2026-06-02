@@ -25,13 +25,20 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
         $<$<CONFIG:Debug>:-O0>
         $<$<CONFIG:Debug>:-g>
         $<$<CONFIG:Debug>:-fno-omit-frame-pointer>
-        $<$<CONFIG:Debug>:-fsanitize=address>
-        $<$<CONFIG:Debug>:-fsanitize=undefined>
     )
-    add_link_options(
-        $<$<CONFIG:Debug>:-fsanitize=address>
-        $<$<CONFIG:Debug>:-fsanitize=undefined>
-    )
+
+    # NOTE: MinGW GCC setups often don't ship ASan/UBSan runtime libs
+    # (link fails with -lasan/-lubsan). Keep sanitizers for non-MinGW.
+    if(NOT MINGW)
+        add_compile_options(
+            $<$<CONFIG:Debug>:-fsanitize=address>
+            $<$<CONFIG:Debug>:-fsanitize=undefined>
+        )
+        add_link_options(
+            $<$<CONFIG:Debug>:-fsanitize=address>
+            $<$<CONFIG:Debug>:-fsanitize=undefined>
+        )
+    endif()
 
     # Release: full optimization, no sanitizers, NDEBUG turns off GLM asserts.
     # -flto=auto lets GCC parallelize the LTRANS stage automatically (otherwise
@@ -124,6 +131,7 @@ target_include_directories(gkom PRIVATE includes/stb)
 
 add_library(glm INTERFACE)
 target_include_directories(glm INTERFACE includes/glm)
+target_compile_definitions(glm INTERFACE GLM_ENABLE_EXPERIMENTAL)
 
 # Link your dependencies
 target_link_libraries(gkom 

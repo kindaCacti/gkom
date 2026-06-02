@@ -49,10 +49,44 @@ class ShapeFactory {
         _meshCache["cube"] = m;
     }
 
-  public:
-    ShapeFactory() { _loadCubeMesh(); _transformCache["cube"] = Transform(); }
+    void _loadWireCubeMesh(const std::string &name) {
+        // Unit cube centered at origin in [-0.5, 0.5]^3, with line indices.
+        // Vertex layout: position + normal (to satisfy default shader inputs).
+        const std::vector<float> vertices = {
+            // position              // normal
+            -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, 1.0f, // 0
+            0.5f,  -0.5f, -0.5f, 0.0f, 0.0f, 1.0f, // 1
+            0.5f,  0.5f,  -0.5f, 0.0f, 0.0f, 1.0f, // 2
+            -0.5f, 0.5f,  -0.5f, 0.0f, 0.0f, 1.0f, // 3
+            -0.5f, -0.5f, 0.5f,  0.0f, 0.0f, 1.0f, // 4
+            0.5f,  -0.5f, 0.5f,  0.0f, 0.0f, 1.0f, // 5
+            0.5f,  0.5f,  0.5f,  0.0f, 0.0f, 1.0f, // 6
+            -0.5f, 0.5f,  0.5f,  0.0f, 0.0f, 1.0f  // 7
+        };
+        const std::vector<unsigned int> indices = {
+            0, 1, 1, 2, 2, 3, 3, 0, // bottom loop
+            4, 5, 5, 6, 6, 7, 7, 4, // top loop
+            0, 4, 1, 5, 2, 6, 3, 7  // vertical edges
+        };
 
-    void registerTransform(const std::string &name, const Transform &transform) {
+        auto m = std::make_shared<Mesh>(vertices, indices,
+                                        /*hasNormals=*/true,
+                                        /*hasColors=*/false,
+                                        /*hasTexcoords=*/false, -0.5f, 0.5f,
+                                        -0.5f, 0.5f, -0.5f, 0.5f,
+                                        /*hasRoughness=*/false);
+
+        _meshCache[name] = m;
+    }
+
+  public:
+    ShapeFactory() {
+        _loadCubeMesh();
+        _transformCache["cube"] = Transform();
+    }
+
+    void registerTransform(const std::string &name,
+                           const Transform &transform) {
         _transformCache[name] = transform;
     }
 
@@ -61,8 +95,11 @@ class ShapeFactory {
         _meshCache[name] = mesh;
     }
 
-    void registerCube() {
-        _loadCubeMesh();
+    void registerCube() { _loadCubeMesh(); }
+
+    void registerWireCube(const std::string &name = "hitbox_cube") {
+        _loadWireCubeMesh(name);
+        _transformCache[name] = Transform();
     }
 
     void registerMesh(const std::string &path, const std::string &name,
@@ -83,8 +120,9 @@ class ShapeFactory {
             if (colorOverride.has_value()) {
                 newShape->setColorOverride(colorOverride.value());
             }
-            if (auto transform = _transformCache.find(name); transform != _transformCache.end()) {
-                newShape->transform = transform->second;
+            if (auto transform = _transformCache.find(name);
+                transform != _transformCache.end()) {
+                newShape->transform.setMatrix(transform->second.getMatrix());
             }
             return newShape;
         }
@@ -102,9 +140,7 @@ class ShapeFactory {
     // }
 
     // Clean up GPU resources on destruction
-    ~ShapeFactory(){
-        
-    }
+    ~ShapeFactory() {}
 };
 
 #endif

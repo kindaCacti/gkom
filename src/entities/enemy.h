@@ -32,16 +32,12 @@ class Enemy : public HitboxedDrawableEntity, public emiter {
           emiter(nullptr, currentTime, time_between_shots), type(type) {
         switch (type) {
         case ESPRESSO:
-            _shape->transform.scale(glm::vec3(0.5f));
             break;
         case COFFEE2GO:
-            _shape->transform.scale(glm::vec3(0.7f));
             break;
         case COFFEE_MAKER:
-            _shape->transform.scale(glm::vec3(0.9f));
             break;
         case ORDINARY_COFFEE:
-            _shape->transform.scale(glm::vec3(0.6f));
             break;
         default:
             throw std::runtime_error("Unknown EnemyType");
