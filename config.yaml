@@ -78,8 +78,14 @@ texture:
   - name: "kitchen_roughness"
     path: "../assets/kitchenRoughness.png"
 
-  - name: "plate_diffuse"
-    path: "../assets/plateDiffuse.png"
+  - name: "plate_diffuse_green"
+    path: "../assets/plateDiffuse_green.png"
+
+  - name: "plate_diffuse_red"
+    path: "../assets/plateDiffuse_red.png"
+
+  - name: "plate_diffuse_blue"
+    path: "../assets/plateDiffuse_blue.png"
 
 shader:
   game_shader:

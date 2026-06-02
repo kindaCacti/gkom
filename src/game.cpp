@@ -124,22 +124,54 @@ void Game::spawnPlayer() {
     player = std::make_shared<Player>(Player(std::move(player_asset)));
 }
 
-void Game::spawnPlate() {
-    auto plate_asset = shapeFactory.createShape("plate");
-    if (auto tex = textureFactory.createTexture("plate_diffuse").lock()) {
-        plate_asset->bindTextureBaseColor(tex);
+void Game::spawnPlates() {
+    {
+        auto plate_asset = shapeFactory.createShape("plate");
+        if (auto tex =
+                textureFactory.createTexture("plate_diffuse_green").lock()) {
+            plate_asset->bindTextureBaseColor(tex);
+        }
+        plate_asset->setRoughness(0.3f);
+        auto plate = std::make_shared<Plate>(std::move(plate_asset));
+        plates.push_back(plate);
     }
-    plate_asset->setRoughness(0.3f);
-    auto plate = std::make_shared<Plate>(std::move(plate_asset));
-    plates.push_back(plate);
+    {
+        auto plate_asset = shapeFactory.createShape("plate");
+        if (auto tex =
+                textureFactory.createTexture("plate_diffuse_red").lock()) {
+            plate_asset->bindTextureBaseColor(tex);
+        }
+        plate_asset->setRoughness(0.3f);
+        auto plate = std::make_shared<Plate>(std::move(plate_asset));
+        plate->setPosition(glm::vec3(5.f, 5.f, 0.f));
+        plates.push_back(plate);
+    }
+    {
+        auto plate_asset = shapeFactory.createShape("plate");
+        if (auto tex =
+                textureFactory.createTexture("plate_diffuse_blue").lock()) {
+            plate_asset->bindTextureBaseColor(tex);
+        }
+        plate_asset->setRoughness(0.3f);
+        auto plate = std::make_shared<Plate>(std::move(plate_asset));
+        plate->setPosition(glm::vec3(5.f, 5.f, 0.2f));
+        plates.push_back(plate);
+    }
 }
 
 void Game::movePlate() {
     // find nearest palte to the player
+    auto base = player->get_pos() +
+                glm::vec3(0.f, 0.f, 1.2f); // slightly above the player
+    auto dir = cam.getXYDirection();
+    auto nose =
+        base +
+        dir *
+            1.f; // point in front of the player where the plate should move to
     std::shared_ptr<Plate> plate = nullptr;
     float min_dist_sq = std::numeric_limits<float>::max();
     for (const auto &p : plates) {
-        float dist_sq = glm::distance2(p->get_pos(), player->get_pos());
+        float dist_sq = glm::distance2(p->get_pos(), nose);
         if (dist_sq < min_dist_sq) {
             min_dist_sq = dist_sq;
             plate = p;
@@ -150,9 +182,6 @@ void Game::movePlate() {
         return;
     }
     // move the plate in front of the palyer as a shield
-    auto base = player->get_pos() +
-                glm::vec3(0.f, 0.f, 1.2f); // slightly above the player
-    auto dir = cam.getXYDirection();
     auto offset = dir * 1.5f; // distance from player
     plate->setPosition(base + offset);
     // rotate the plate to face the player
@@ -295,7 +324,7 @@ void Game::setupDefaultScene() {
     shaders.gameShader->use();
     setupLights();
     spawnPlayer();
-    spawnPlate();
+    spawnPlates();
     for (int i = 0; i < 5; ++i) {
         spawnRandomemiter();
     }
@@ -312,7 +341,7 @@ void Game::setupBenchmarkScene() {
     shaders.gameShader->use();
     setupLights();
     spawnPlayer();
-    spawnPlate();
+    spawnPlates();
     player->setPosition(2.f, 0.f, 0.f);
     setupTable();
     cam.setAspectRatio(static_cast<float>(gameSettings.windowWidth) /

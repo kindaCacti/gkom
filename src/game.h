@@ -78,7 +78,7 @@ struct Game {
                            std::optional<glm::vec3> color = std::nullopt);
     void loadAssets();
     void spawnPlayer();
-    void spawnPlate();
+    void spawnPlates();
     void movePlate();
     void spawnEmiter(float time_between_shots,
                      glm::vec3 position = glm::vec3(0.f),
