@@ -16,6 +16,7 @@
 #include "../bullet_buffer.h"
 
 class emiter : public virtual DrawableEntity {
+  protected:
     float _lastShotTime;
     float _timeBetweenShots;
 

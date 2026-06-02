@@ -7,6 +7,8 @@
 #include <memory>
 #include <vector>
 #include <list>
+#include <algorithm>
+#include <cmath>
 
 #include "game.h"
 #include "camera.h"
@@ -21,6 +23,8 @@
 #include "globals.h"
 #include "entities/enemy.h"
 #include "entities/plate.h"
+#include <iomanip>
+#include <sstream>
 
 void Game::setupGame() {}
 
@@ -38,11 +42,11 @@ int Game::loadFont() {
 void Game::updateScene() {
     snapPlayerIntoArea();
     // removeOutOfBoundsBullets();
-    while (currentFrameTime / emiters.size() >
-           (gameSettings.is_benchmark
-                ? BENCHMARK_SPAWNING_NEW_EMMITERS_AFTER_TIME
-                : SPAWNING_NEW_EMMITERS_AFTER_TIME)) {
-        spawnRandomemiter();
+    auto tbe = gameSettings.is_benchmark
+                   ? BENCHMARK_SPAWNING_NEW_EMMITERS_AFTER_TIME
+                   : SPAWNING_NEW_EMMITERS_AFTER_TIME;
+    while (currentFrameTime - enemies.size() * tbe > 0) {
+        spawnRandomEnemy();
     }
     shootIfTime(BULLET_SPEED);
     moveRemoveBullets();
@@ -51,7 +55,12 @@ void Game::updateScene() {
     updateCamera();
 }
 
-void Game::drawScene() { drawEntities(); }
+void Game::drawScene() {
+    drawEntities();
+    if (settings.showSpawningAreas) {
+        SPAWNING_AREAS.drawDebug(shaders.gameShader, *spawningAreaShape);
+    }
+}
 
 void Game::doFramePreprocessing() {
     lastFrameTime = currentFrameTime;
@@ -97,7 +106,6 @@ void Game::loadAssets() {
 
     shapeFactory.registerCube();
 
-    // Reusable wireframe cube for hitboxes (12 edges), owned by Game.
     shapeFactory.registerWireCube();
     hitboxShape =
         shapeFactory.createShape("hitbox_cube", glm::vec3(0.0f, 1.0f, 0.0f));
@@ -105,6 +113,15 @@ void Game::loadAssets() {
         hitboxShape->setRoughness(1.0f);
         hitboxShape->setMetallic(0.0f);
         hitboxShape->setSpecular(0.0f);
+    }
+
+    shapeFactory.registerWireCube("spawning_area_cube");
+    spawningAreaShape = shapeFactory.createShape("spawning_area_cube",
+                                                 glm::vec3(1.0f, 0.0f, 0.0f));
+    if (spawningAreaShape) {
+        spawningAreaShape->setRoughness(1.0f);
+        spawningAreaShape->setMetallic(0.0f);
+        spawningAreaShape->setSpecular(0.0f);
     }
 
     bulletBuffer.setupInstancedDrawing(
@@ -191,27 +208,39 @@ void Game::movePlate() {
     // plate->rotate(glm::vec3(90.f, 0.f, 0.f));
 }
 
-void Game::spawnEmiter(float time_between_shots, glm::vec3 position,
-                       glm::vec3 rotation) {
-    EnemyType type =
-        static_cast<EnemyType>(static_cast<float>(rand()) / RAND_MAX * 4.0f);
-    emiters.push_back(std::make_shared<Enemy>(
+void Game::spawnEnemy(glm::vec3 position, glm::vec3 rotation) {
+    EnemyType type = ORDINARY_COFFEE;
+    // weakest type by default, will be upgraded if spawned too close to
+    // existing enemy. For random type:
+    // static_cast<EnemyType>(static_cast<float>(rand()) / RAND_MAX * 4.0f);
+    enemies.push_back(std::make_shared<Enemy>(
         std::move(shapeFactory.createShape(Enemy::getAssetName(type))), type,
-        currentFrameTime, time_between_shots));
-    emiters.back()->setPosition(position);
-    emiters.back()->setRotation(rotation);
+        currentFrameTime));
+    enemies.back()->setPosition(position);
+    enemies.back()->setRotation(rotation);
 }
 
-void Game::spawnRandomemiter() {
-    float angle = static_cast<float>(rand()) / RAND_MAX * 2.0f * 3.14159265f;
-    float radius =
-        std::sqrt(AREA_RADIUS_SQ) * 0.8f; // Spawn within 80% of the area radius
-    glm::vec3 position =
-        glm::vec3(cos(angle) * radius, sin(angle) * radius, 0.f);
-    glm::vec3 rotation = glm::vec3(0.f, 0.f,
-                                   glm::degrees(angle) + 180.0f +
-                                       getRandomFloatBetween(-10.f, 10.f));
-    spawnEmiter(0.5f, position, rotation);
+void Game::spawnRandomEnemy() {
+    glm::vec3 position = SPAWNING_AREAS.randomSample();
+    // avoid spawning too close to existing enemies
+    bool too_close = false;
+    std::shared_ptr<Enemy> closest_enemy = nullptr;
+    for (const auto &enemy : enemies) {
+        if (glm::distance2(enemy->get_pos(), position) < 1.75f) {
+            too_close = true;
+            closest_enemy = enemy;
+            break;
+        }
+    }
+    if (too_close && closest_enemy) {
+        // skip spawning, upgrade existing instead
+        closest_enemy->upgrade(shapeFactory);
+        return;
+    }
+    float angle = std::atan2(-position.y, -position.x); // angle towards center
+    glm::vec3 rotation = glm::vec3(
+        0.f, 0.f, glm::degrees(angle) + getRandomFloatBetween(-10.f, 10.f));
+    spawnEnemy(position, rotation);
 }
 
 void Game::snapPlayerIntoArea() {
@@ -229,9 +258,8 @@ void Game::snapPlayerIntoArea() {
 }
 
 void Game::shootIfTime(float speed) {
-    for (auto emiter : emiters) {
-        emiter->shootIfTime(shapeFactory, currentFrameTime, speed,
-                            bulletBuffer);
+    for (auto enemy : enemies) {
+        enemy->shootIfTime(shapeFactory, currentFrameTime, speed, bulletBuffer);
     }
 }
 
@@ -325,9 +353,7 @@ void Game::setupDefaultScene() {
     setupLights();
     spawnPlayer();
     spawnPlates();
-    for (int i = 0; i < 5; ++i) {
-        spawnRandomemiter();
-    }
+    spawnRandomEnemy();
     setupTable();
     cam.setAspectRatio(static_cast<float>(gameSettings.windowWidth) /
                        static_cast<float>(gameSettings.windowHeight));
@@ -394,8 +420,8 @@ void Game::drawEntities() {
             plate->drawHitbox(*shaders.gameShader, *hitboxShape);
         }
     }
-    for (auto &emiter : emiters) {
-        emiter->draw(*shaders.gameShader);
+    for (auto &enemy : enemies) {
+        enemy->draw(*shaders.gameShader);
     }
     for (auto &shape : shapes) {
         shape->draw(*shaders.gameShader, glm::mat4(1.0f));
@@ -432,6 +458,13 @@ void Game::bundledDrawText(std::vector<TextData> &texts) {
     glEnable(GL_DEPTH_TEST);
 }
 
+inline auto formatVec3_1dp = [](const glm::vec3 &v) {
+    std::ostringstream oss;
+    oss << "(" << std::fixed << std::setprecision(1) << v.x << ", " << v.y
+        << ", " << v.z << ")";
+    return oss.str();
+};
+
 void Game::printStats() {
     int fps = std::round(1.0f / (deltaTime + 0.0001f));
 
@@ -451,6 +484,12 @@ void Game::printStats() {
                          std::to_string(gameStateData.drawCallsMade),
                  .x = 20.0f,
                  .y = 540.0f,
+                 .scale = 0.3f,
+                 .color = glm::vec3(0.0f, 0.0f, 0.0f)},
+        TextData{.text = std::string("Player pos: ") +
+                         formatVec3_1dp(player->get_pos()),
+                 .x = 20.0f,
+                 .y = 520.0f,
                  .scale = 0.3f,
                  .color = glm::vec3(0.0f, 0.0f, 0.0f)},
     };
