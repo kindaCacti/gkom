@@ -1,6 +1,7 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
+#include <glm/gtx/norm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <memory>
@@ -19,6 +20,7 @@
 #include "text/text.h"
 #include "globals.h"
 #include "entities/enemy.h"
+#include "entities/plate.h"
 
 void Game::setupGame() {}
 
@@ -111,6 +113,44 @@ void Game::spawnPlayer() {
     player = std::make_shared<Player>(Player(std::move(player_asset)));
 }
 
+void Game::spawnPlate() {
+    auto plate_asset = shapeFactory.createShape("plate");
+    if (auto tex = textureFactory.createTexture("plate_diffuse").lock()) {
+        plate_asset->bindTextureBaseColor(tex);
+    }
+    plate_asset->setRoughness(0.3f);
+    auto plate = std::make_shared<Plate>(std::move(plate_asset));
+    plates.push_back(plate);
+}
+
+void Game::movePlate() {
+    // find nearest palte to the player
+    std::shared_ptr<Plate> plate = nullptr;
+    float min_dist_sq = std::numeric_limits<float>::max();
+    for (const auto &p : plates) {
+        float dist_sq = glm::distance2(p->get_pos(), player->get_pos());
+        if (dist_sq < min_dist_sq) {
+            min_dist_sq = dist_sq;
+            plate = p;
+        }
+    }
+    if (!plate ||
+        min_dist_sq > 4.0f) { // if no plate is close enough, do nothing
+        return;
+    }
+    // move the plate in front of the palyer as a shield
+    auto base = player->get_pos() +
+                glm::vec3(0.f, 0.f, 1.2f); // slightly above the player
+    auto dir = cam.getXYDirection();
+    auto offset = dir * 1.5f; // distance from player
+    plate->setPosition(base + offset);
+    // rotate the plate to face the player
+    float angle = std::atan2(dir.y, dir.x);
+    plate->setRotation(glm::vec3(-90.f, 0.f, glm::degrees(angle) + 90.f));
+    // rotate plate 90 degrees to be vertical
+    // plate->rotate(glm::vec3(90.f, 0.f, 0.f));
+}
+
 void Game::spawnEmiter(float time_between_shots, glm::vec3 position,
                        glm::vec3 rotation) {
     EnemyType type =
@@ -161,19 +201,20 @@ void Game::moveRemoveBullets() {
 
 void Game::setupLights() {
     BlinnPhongParameters bpp;
+    float strength = 500.0f;
     bpp.num_lights = 4;
     bpp.light_pos[0] = glm::vec3(-10.f, 20.0f, 10.0f);
     bpp.light_color[0] = glm::vec3(1.0f, 1.0f, 1.0f);
-    bpp.light_strength[0] = 1000.0f;
+    bpp.light_strength[0] = strength;
     bpp.light_pos[1] = glm::vec3(10.f, 20.0f, 10.0f);
     bpp.light_color[1] = glm::vec3(1.0f, 1.0f, 1.0f);
-    bpp.light_strength[1] = 1000.0f;
+    bpp.light_strength[1] = strength;
     bpp.light_pos[2] = glm::vec3(-10.f, -20.0f, 10.0f);
     bpp.light_color[2] = glm::vec3(1.0f, 1.0f, 1.0f);
-    bpp.light_strength[2] = 1000.0f;
+    bpp.light_strength[2] = strength;
     bpp.light_pos[3] = glm::vec3(10.f, -20.0f, 10.0f);
     bpp.light_color[3] = glm::vec3(1.0f, 1.0f, 1.0f);
-    bpp.light_strength[3] = 1000.0f;
+    bpp.light_strength[3] = strength;
 
     shaders.gameShader->use();
     shader_utils::set_blinn_phong_uniforms(*shaders.gameShader, bpp);
@@ -243,6 +284,7 @@ void Game::setupDefaultScene() {
     shaders.gameShader->use();
     setupLights();
     spawnPlayer();
+    spawnPlate();
     for (int i = 0; i < 5; ++i) {
         spawnRandomemiter();
     }
@@ -259,6 +301,7 @@ void Game::setupBenchmarkScene() {
     shaders.gameShader->use();
     setupLights();
     spawnPlayer();
+    spawnPlate();
     player->setPosition(2.f, 0.f, 0.f);
     setupTable();
     cam.setAspectRatio(static_cast<float>(gameSettings.windowWidth) /
@@ -291,6 +334,9 @@ void Game::drawEntities() {
     shaders.gameShader->use();
     player->drawHitbox(*shaders.gameShader);
     player->draw(*shaders.gameShader);
+    for (auto &plate : plates) {
+        plate->draw(*shaders.gameShader);
+    }
     for (auto &emiter : emiters) {
         emiter->draw(*shaders.gameShader);
     }

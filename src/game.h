@@ -23,6 +23,7 @@ const GameControlsMode CONTROLS_MODE = THIRD_PERSON;
 #include "camera.h"
 #include "entities/player.h"
 #include "entities/emiter.h"
+#include "entities/plate.h"
 #include "defines.h"
 #include "shaders/shader_s.h"
 #include "shaders/utils.h"
@@ -48,6 +49,7 @@ struct GameSettings {
 struct Game {
     Camera cam;
     std::shared_ptr<Player> player;
+    std::vector<std::shared_ptr<Plate>> plates;
     std::list<std::shared_ptr<emiter>> emiters;
     std::vector<std::shared_ptr<Shape>> shapes;
     BulletBuffer bulletBuffer;
@@ -69,9 +71,13 @@ struct Game {
     void drawScene();
     void doFramePreprocessing();
     void loadShaders();
-    void registerMeshAsset(std::string&& name, std::string&& path, Transform&& transform = Transform(), std::optional<glm::vec3> color = std::nullopt);
+    void registerMeshAsset(std::string &&name, std::string &&path,
+                           Transform &&transform = Transform(),
+                           std::optional<glm::vec3> color = std::nullopt);
     void loadAssets();
     void spawnPlayer();
+    void spawnPlate();
+    void movePlate();
     void spawnEmiter(float time_between_shots,
                      glm::vec3 position = glm::vec3(0.f),
                      glm::vec3 rotation = glm::vec3(0.f));

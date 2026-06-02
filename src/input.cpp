@@ -36,4 +36,8 @@ void processInput(GLFWwindow *window, Game &game, float deltaTime) {
         game.player->move(-right_dir.x, -right_dir.y, -right_dir.z);
     if (isPressed(window, KEYBIND_MOVE_RIGHT))
         game.player->move(right_dir.x, right_dir.y, right_dir.z);
+
+    if (glfwGetMouseButton(window, KEYBIND_PLACE_PLATE) == GLFW_PRESS) {
+        game.movePlate();
+    }
 }
