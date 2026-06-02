@@ -37,8 +37,9 @@ void Game::updateScene() {
     snapPlayerIntoArea();
     // removeOutOfBoundsBullets();
     while (currentFrameTime / emiters.size() >
-           (gameSettings.is_benchmark ? BENCHMARK_SPAWNING_NEW_EMMITERS_AFTER_TIME
-                                 : SPAWNING_NEW_EMMITERS_AFTER_TIME)) {
+           (gameSettings.is_benchmark
+                ? BENCHMARK_SPAWNING_NEW_EMMITERS_AFTER_TIME
+                : SPAWNING_NEW_EMMITERS_AFTER_TIME)) {
         spawnRandomemiter();
     }
     shootIfTime(BULLET_SPEED);
@@ -57,15 +58,20 @@ void Game::doFramePreprocessing() {
 }
 
 void Game::loadShaders() {
-    shaders.gameShader = std::make_shared<Shader>(gameSettings.gameShader.vertexShader.c_str(),
-                                                  gameSettings.gameShader.fragmentShader.c_str());
-    shaders.textShader =
-        std::make_shared<Shader>(gameSettings.textShader.vertexShader.c_str(), gameSettings.textShader.fragmentShader.c_str());
+    shaders.gameShader = std::make_shared<Shader>(
+        gameSettings.gameShader.vertexShader.c_str(),
+        gameSettings.gameShader.fragmentShader.c_str());
+    shaders.textShader = std::make_shared<Shader>(
+        gameSettings.textShader.vertexShader.c_str(),
+        gameSettings.textShader.fragmentShader.c_str());
     shaders.instancedShader = std::make_shared<Shader>(
-        gameSettings.instancedShader.vertexShader.c_str(), gameSettings.instancedShader.fragmentShader.c_str());
+        gameSettings.instancedShader.vertexShader.c_str(),
+        gameSettings.instancedShader.fragmentShader.c_str());
 }
 
-void Game::registerMeshAsset(std::string&& name, std::string&& path, Transform&& transform, std::optional<glm::vec3> color) {
+void Game::registerMeshAsset(std::string &&name, std::string &&path,
+                             Transform &&transform,
+                             std::optional<glm::vec3> color) {
     shapeFactory.registerMesh(path, name, color);
     shapeFactory.registerTransform(name, Transform());
 }
@@ -74,19 +80,18 @@ void Game::loadAssets() {
     textureFactory.registerTexture(
         std::make_shared<Texture>(Texture::newNoise2D(512, 512)), "noise");
 
-    for (const auto& mesh : gameSettings.meshes){
+    for (const auto &mesh : gameSettings.meshes) {
         shapeFactory.registerMesh(mesh.path, mesh.name, mesh.colorOverride);
         shapeFactory.registerTransform(mesh.name, mesh.transform);
     }
 
     std::cout << gameSettings.textures.size() << std::endl;
-    for(const auto& texture : gameSettings.textures) {
+    for (const auto &texture : gameSettings.textures) {
         textureFactory.registerTexture(
             std::make_shared<Texture>(Texture::fromFile(texture.path)),
-            texture.name
-        );
+            texture.name);
     }
-    
+
     shapeFactory.registerCube();
 
     bulletBuffer.setupInstancedDrawing(
@@ -123,10 +128,9 @@ void Game::spawnRandomemiter() {
         std::sqrt(AREA_RADIUS_SQ) * 0.8f; // Spawn within 80% of the area radius
     glm::vec3 position =
         glm::vec3(cos(angle) * radius, sin(angle) * radius, 0.f);
-    glm::vec3 rotation = glm::vec3(
-        0.f, 0.f,
-        glm::degrees(angle) + 180.0f +
-            getRandomFloatBetween(-10.f, 10.f));
+    glm::vec3 rotation = glm::vec3(0.f, 0.f,
+                                   glm::degrees(angle) + 180.0f +
+                                       getRandomFloatBetween(-10.f, 10.f));
     spawnEmiter(0.5f, position, rotation);
 }
 

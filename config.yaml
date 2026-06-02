@@ -16,25 +16,25 @@ mesh:
     path: "../assets/espresso.obj"
     position: [0.0, 0.0, 0.0]
     rotation: [0.0, 0.0, 0.0]
-    scale: [1.0, 1.0, 1.0]
+    scale: [0.7, 0.7, 0.7]
 
   - name: "coffee2go" # From Enemy::getAssetName(COFFEE2GO)
     path: "../assets/coffee2go.obj"
     position: [0.0, 0.0, 0.0]
     rotation: [0.0, 0.0, 0.0]
-    scale: [1.0, 1.0, 1.0]
+    scale: [0.7, 0.7, 0.7]
 
   - name: "coffee_maker" # From Enemy::getAssetName(COFFEE_MAKER)
     path: "../assets/coffeeMaker.obj"
     position: [0.0, 0.0, 0.0]
     rotation: [0.0, 0.0, 180.0]
-    scale: [1.0, 1.0, 1.0]
+    scale: [0.8, 0.8, 0.8]
 
   - name: "ordinary_coffee" # From Enemy::getAssetName(ORDINARY_COFFEE)
     path: "../assets/ordinaryCoffee.obj"
     position: [0.0, 0.0, 0.0]
     rotation: [0.0, 0.0, 180.0]
-    scale: [1.0, 1.0, 1.0]
+    scale: [0.6, 0.6, 0.6]
 
   - name: "droplet" # From BULLET_ASSET_NAME
     path: "../assets/droplet.obj"
