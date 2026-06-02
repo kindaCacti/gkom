@@ -73,9 +73,10 @@ class Entity {
     virtual void scale(glm::vec3 &delta_scale) { _scale += delta_scale; }
 
     virtual glm::vec3 get_pos() const { return _pos; }
+    virtual glm::vec3 get_rot() const { return _rot; }
 };
 
-class DrawableEntity : public Entity {
+class DrawableEntity : public virtual Entity {
   protected:
     std::unique_ptr<Shape> _shape;
 

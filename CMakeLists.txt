@@ -116,6 +116,7 @@ add_executable(gkom
     src/entities/player.cpp
     src/entities/bullet.cpp
     src/entities/emiter.cpp
+    src/entities/enemy.cpp
     src/shaders/utils.cpp
     src/globals.cpp
 )

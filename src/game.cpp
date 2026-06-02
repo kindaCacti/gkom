@@ -212,7 +212,8 @@ void Game::spawnEnemy(glm::vec3 position, glm::vec3 rotation) {
     EnemyType type = ORDINARY_COFFEE;
     // weakest type by default, will be upgraded if spawned too close to
     // existing enemy. For random type:
-    // static_cast<EnemyType>(static_cast<float>(rand()) / RAND_MAX * 4.0f);
+    // EnemyType type =
+    //     static_cast<EnemyType>(static_cast<float>(rand()) / RAND_MAX * 4.0f);
     enemies.push_back(std::make_shared<Enemy>(
         std::move(shapeFactory.createShape(Enemy::getAssetName(type))), type,
         currentFrameTime));
@@ -234,7 +235,7 @@ void Game::spawnRandomEnemy() {
     }
     if (too_close && closest_enemy) {
         // skip spawning, upgrade existing instead
-        closest_enemy->upgrade(shapeFactory);
+        closest_enemy->upgrade(shapeFactory, currentFrameTime);
         return;
     }
     float angle = std::atan2(-position.y, -position.x); // angle towards center

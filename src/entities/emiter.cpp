@@ -13,17 +13,18 @@
 #include "emiter.h"
 #include "../bullet_buffer.h"
 
-std::shared_ptr<Bullet> emiter::shootIfTime(ShapeFactory &shape_factory,
-                                            float currentTime, float speed) {
+std::vector<std::shared_ptr<Bullet>>
+emiter::shootIfTime(ShapeFactory &shape_factory, float currentTime,
+                    float speed) {
     if (currentTime - _lastShotTime < _timeBetweenShots) {
-        return nullptr;
+        return {};
     }
 
     auto bulletAsset = shape_factory.createShape(BULLET_ASSET_NAME);
     bulletAsset->transform.scale(glm::vec3(0.2f));
     bulletAsset->transform.translate(glm::vec3(0.f, 0.f, 0.f));
     bulletAsset->transform.rotate(180.f, glm::vec3(0.f, 0.f, 1.f));
-    return shoot(std::move(bulletAsset), currentTime, speed);
+    return {shoot(std::move(bulletAsset), currentTime, speed)};
 }
 
 void emiter::shootIfTime(ShapeFactory &shapeFactory, float currentTime,
@@ -40,15 +41,16 @@ void emiter::shootIfTime(ShapeFactory &shapeFactory, float currentTime,
     shoot(std::move(bulletAsset), currentTime, speed, bulletBuffer);
 }
 
-std::shared_ptr<Bullet> emiter::shoot(std::unique_ptr<Shape> &&bulletShape,
-                                      float currentTime, float speed) {
+std::vector<std::shared_ptr<Bullet>>
+emiter::shoot(std::unique_ptr<Shape> &&bulletShape, float currentTime,
+              float speed) {
     _lastShotTime = currentTime;
     std::shared_ptr<Bullet> newBullet =
         std::make_shared<Bullet>(std::move(bulletShape), speed, _rot);
     newBullet->setPosition(_pos);
     newBullet->setRotation(_rot);
     newBullet->setScale(_scale);
-    return newBullet;
+    return {newBullet};
 }
 
 void emiter::shoot(std::unique_ptr<Shape> &&bullet_shape, float current_time,
