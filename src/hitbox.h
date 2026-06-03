@@ -425,7 +425,8 @@ class Hitbox {
                 other.boxTransformMatrix(otherPos, otherRot));
         }
 
-        // Cylinder-cylinder: oriented capped cylinder SAT (flat end-caps).
+        // Cylinder-cylinder: oriented capped cylinder SAT (flat end-caps), with
+        // a cheap capsule rejection test up-front.
         if (_shape == Shape::Cylinder && other._shape == Shape::Cylinder) {
             const glm::mat4 RA = getEulerRotationMatrix(rot);
             const glm::mat4 RB = getEulerRotationMatrix(otherRot);
@@ -454,15 +455,28 @@ class Hitbox {
             const float hB = other._cylHalfHeight;
             const float rB = other._cylRadius;
 
-            // Parallel / nearly-parallel cylinders: do exact test.
+            // Fast early-out (safe rejection):
+            // Each capped cylinder is a subset of a capsule with the same axis
+            // segment and radius. If those capsules do NOT intersect, the
+            // cylinders cannot intersect.
+            const glm::vec3 segA0 = cA - uA * hA;
+            const glm::vec3 segA1 = cA + uA * hA;
+            const glm::vec3 segB0 = cB - uB * hB;
+            const glm::vec3 segB1 = cB + uB * hB;
+            const float rsum = rA + rB;
+            const float capD2 =
+                segmentSegmentDistanceSquared(segA0, segA1, segB0, segB1);
+            if (capD2 > rsum * rsum) {
+                return false;
+            }
+
+            // Parallel / nearly-parallel cylinders: exact test.
             glm::vec3 n = glm::cross(uA, uB);
             const float n2 = glm::dot(n, n);
-            if (n2 < 1e-8f) {
-                // Axis overlap
+            if (n2 < 1e-6f) {
                 const float dz = std::abs(glm::dot(delta, uA));
                 if (dz > (hA + hB))
                     return false;
-                // Distance between axes (perpendicular component)
                 const glm::vec3 perp = delta - uA * glm::dot(delta, uA);
                 const float d2 = glm::dot(perp, perp);
                 const float r = rA + rB;

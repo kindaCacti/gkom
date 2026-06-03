@@ -1,5 +1,7 @@
 #include "input.h"
 
+#include <cmath>
+
 #include "defines.h"
 #include "game.h"
 
@@ -56,33 +58,40 @@ void processInput(GLFWwindow *window, Game &game, float deltaTime) {
             return a.sumDist2 > b.sumDist2 + 1e-6f;
         };
 
-        const CollisionScore startScore = collisionScore();
-        const bool startedIntersecting = startScore.collisions > 0;
+        // Sub-step a little to avoid tunneling on occasional deltaTime spikes,
+        // but cap the number of steps to avoid CPU spikes.
+        const float maxStepLen = 0.35f;
+        const float len = glm::length(move_vec);
+        const int stepsRaw =
+            std::max(1, static_cast<int>(std::ceil(len / maxStepLen)));
+        const int steps = std::min(stepsRaw, 4);
+        const glm::vec3 perStep = move_vec / float(steps);
+
+        CollisionScore currentScore = collisionScore();
+        const bool startedIntersecting = currentScore.collisions > 0;
 
         auto tryMove = [&](const glm::vec3 &delta) {
             if (delta.x == 0.0f && delta.y == 0.0f && delta.z == 0.0f)
                 return true;
 
             const glm::vec3 beforePos = game.player->get_pos();
-            const CollisionScore beforeScore = collisionScore();
 
             game.player->move(delta.x, delta.y, delta.z);
             const CollisionScore afterScore = collisionScore();
 
             if (afterScore.collisions == 0) {
+                currentScore = afterScore;
                 return true;
             }
 
-            // Normal case: reject any move that causes intersection.
             if (!startedIntersecting) {
                 game.player->setPosition(beforePos.x, beforePos.y, beforePos.z);
                 return false;
             }
 
-            // Special case: already intersecting (e.g., spawned inside) — allow
-            // movement that improves the situation, but block movement that
-            // makes it worse ("not further in").
-            if (isBetter(afterScore, beforeScore)) {
+            // If already intersecting, allow only improvements.
+            if (isBetter(afterScore, currentScore)) {
+                currentScore = afterScore;
                 return true;
             }
 
@@ -90,16 +99,14 @@ void processInput(GLFWwindow *window, Game &game, float deltaTime) {
             return false;
         };
 
-        // First try the full movement.
-        if (tryMove(move_vec)) {
-            return;
+        for (int s = 0; s < steps; ++s) {
+            if (tryMove(perStep))
+                continue;
+            // Slide along obstacles.
+            tryMove(glm::vec3(perStep.x, 0.0f, 0.0f));
+            tryMove(glm::vec3(0.0f, perStep.y, 0.0f));
+            tryMove(glm::vec3(0.0f, 0.0f, perStep.z));
         }
-
-        // If blocked, slide along obstacles by trying axis-separated movement.
-        // Order matters: X then Y tends to feel natural for WASD.
-        tryMove(glm::vec3(move_vec.x, 0.0f, 0.0f));
-        tryMove(glm::vec3(0.0f, move_vec.y, 0.0f));
-        tryMove(glm::vec3(0.0f, 0.0f, move_vec.z));
     };
 
     if (isPressed(window, KEYBIND_MOVE_FORWARD)) {
