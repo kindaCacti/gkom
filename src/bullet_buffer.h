@@ -25,6 +25,8 @@ class BulletBuffer {
 
     size_t activeElementCount() const { return _activeCount; }
 
+    void clearBuffer() { _activeCount = 0; }
+
     std::shared_ptr<Bullet> createBullet(std::unique_ptr<Shape> &&shape,
                                          float speed, glm::vec3 &direction) {
         if (_activeCount == _elements.size()) {

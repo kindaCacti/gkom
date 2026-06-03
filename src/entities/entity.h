@@ -71,7 +71,7 @@ class Entity {
     virtual void rotate(glm::vec3 &delta_rot) { _rot += delta_rot; }
     virtual void move(glm::vec3 &delta_pos) { _pos += delta_pos; }
     virtual void scale(glm::vec3 &delta_scale) { _scale += delta_scale; }
-
+    virtual glm::vec3 rotation() { return _rot; }
     virtual glm::vec3 get_pos() const { return _pos; }
 };
 

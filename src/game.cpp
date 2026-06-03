@@ -38,7 +38,7 @@ int Game::loadFont() {
 void Game::updateScene() {
     snapPlayerIntoArea();
     // removeOutOfBoundsBullets();
-    while (currentFrameTime / emiters.size() >
+    while (gameplayTime() / (emiters.size() + 1) >
            (gameSettings.is_benchmark
                 ? BENCHMARK_SPAWNING_NEW_EMMITERS_AFTER_TIME
                 : SPAWNING_NEW_EMMITERS_AFTER_TIME)) {
@@ -51,14 +51,21 @@ void Game::updateScene() {
     updateCamera();
 }
 
+void Game::clearNonPlayerEntities() {
+    bulletBuffer.clearBuffer();
+    emiters.clear();
+}
+
+void Game::restartGame() {
+    clearNonPlayerEntities();
+    restartTimes();
+    resetPlayer();
+    resetPlates();
+}
+
 void Game::drawScene() { drawEntities(); }
 
-void Game::doFramePreprocessing() {
-    lastFrameTime = currentFrameTime;
-    currentFrameTime = static_cast<float>(glfwGetTime());
-    deltaTime = currentFrameTime - lastFrameTime;
-    deltaTime = std::min(deltaTime, 0.1f);
-}
+void Game::doFramePreprocessing() { updateTimes(); }
 
 void Game::loadShaders() {
     shaders.gameShader = std::make_shared<Shader>(
@@ -124,6 +131,12 @@ void Game::spawnPlayer() {
     player = std::make_shared<Player>(Player(std::move(player_asset)));
 }
 
+void Game::resetPlayer() {
+    player->setPosition(0.f, 0.f, 0.f);
+    player->setRotation(0.f, 0.f, 0.f);
+    player->lives = DEFAULT_PLAYER_HEARTS;
+}
+
 void Game::spawnPlates() {
     {
         auto plate_asset = shapeFactory.createShape("plate");
@@ -156,6 +169,13 @@ void Game::spawnPlates() {
         auto plate = std::make_shared<Plate>(std::move(plate_asset));
         plate->setPosition(glm::vec3(5.f, 5.f, 0.2f));
         plates.push_back(plate);
+    }
+}
+
+void Game::resetPlates() {
+    for (auto &plate : plates) {
+        plate->setPosition(0.f, 0.f, 0.f);
+        plate->setRotation(0.f, 0.f, 0.f);
     }
 }
 
@@ -197,7 +217,7 @@ void Game::spawnEmiter(float time_between_shots, glm::vec3 position,
         static_cast<EnemyType>(static_cast<float>(rand()) / RAND_MAX * 4.0f);
     emiters.push_back(std::make_shared<Enemy>(
         std::move(shapeFactory.createShape(Enemy::getAssetName(type))), type,
-        currentFrameTime, time_between_shots));
+        currentFrameTime(), time_between_shots));
     emiters.back()->setPosition(position);
     emiters.back()->setRotation(rotation);
 }
@@ -230,13 +250,13 @@ void Game::snapPlayerIntoArea() {
 
 void Game::shootIfTime(float speed) {
     for (auto emiter : emiters) {
-        emiter->shootIfTime(shapeFactory, currentFrameTime, speed,
+        emiter->shootIfTime(shapeFactory, currentFrameTime(), speed,
                             bulletBuffer);
     }
 }
 
 void Game::moveRemoveBullets() {
-    bulletBuffer.moveRemoveActiveElements(deltaTime, player->get_pos());
+    bulletBuffer.moveRemoveActiveElements(deltaTime(), player->get_pos());
 }
 
 void Game::setupLights() {
@@ -367,6 +387,7 @@ void Game::checkPlayerCollision() {
 
     for (int bulletId : bulletBuffer.checkActiveBulletCollision(player.get())) {
         bulletBuffer.deactivateElement(static_cast<size_t>(bulletId));
+        --player->lives;
     }
 }
 
@@ -407,6 +428,8 @@ void Game::drawEntities() {
     for (int i = 0; i < 6; ++i) {
         axes[i]->draw(*shaders.gameShader, glm::mat4(1.0f));
     }
+
+    showPlayerLives();
 }
 
 void Game::drawBulletsInstanced() {
@@ -433,26 +456,33 @@ void Game::bundledDrawText(std::vector<TextData> &texts) {
 }
 
 void Game::printStats() {
-    int fps = std::round(1.0f / (deltaTime + 0.0001f));
+    int fps = std::round(1.0f / (deltaTime() + 0.0001f));
 
     std::vector<TextData> texts = {
         TextData{.text = std::string("fps: ") + std::to_string(fps),
                  .x = 20.0f,
                  .y = 580.0f,
                  .scale = 0.3f,
-                 .color = glm::vec3(0.0f, 0.0f, 0.0f)},
+                 .color = glm::vec3(1.0f, 1.0f, 1.0f)},
         TextData{.text = std::string("bullets: ") +
                          std::to_string(bulletBuffer.activeElementCount()),
                  .x = 20.0f,
                  .y = 560.0f,
                  .scale = 0.3f,
-                 .color = glm::vec3(0.0f, 0.0f, 0.0f)},
+                 .color = glm::vec3(1.0f, 1.0f, 1.0f)},
         TextData{.text = std::string("draw calls: ") +
                          std::to_string(gameStateData.drawCallsMade),
                  .x = 20.0f,
                  .y = 540.0f,
                  .scale = 0.3f,
-                 .color = glm::vec3(0.0f, 0.0f, 0.0f)},
+                 .color = glm::vec3(1.0f, 1.0f, 1.0f)},
+        TextData{.text = std::string("score: ") +
+                         std::to_string(static_cast<int>(
+                             std::floor(gameplayTime() * 100))),
+                 .x = 20.0f,
+                 .y = 520.0f,
+                 .scale = 0.3f,
+                 .color = glm::vec3(1.0f, 1.0f, 1.0f)},
     };
 
     glDisable(GL_DEPTH_TEST);
@@ -461,3 +491,26 @@ void Game::printStats() {
 
     glEnable(GL_DEPTH_TEST);
 }
+
+void Game::showHeart(glm::vec3 pos) {
+    auto heart = DrawableEntity(shapeFactory.createShape(HEART_ASSET_NAME));
+    heart.setPosition(pos);
+    heart.rotate(0.0f, 0.0f, gameplayTime() * 40);
+    heart.draw(*shaders.gameShader);
+}
+
+void Game::showPlayerLives() {
+    float midX = (player->top_x() + player->bottom_x()) / 2.;
+    float midY = (player->top_y() + player->bottom_y()) / 2.;
+    float midZ = (player->top_z() + player->bottom_z()) / 2. + 1.2f;
+    float heartDistance = 1.2f;
+    float firstHeartY =
+        midY - static_cast<float>(player->lives * heartDistance) / 2.0f + 0.45f;
+    glm::vec3 middleHeartPosition(midX, firstHeartY, midZ);
+    for (int i = 0; i < player->lives; i++) {
+        showHeart(middleHeartPosition);
+        middleHeartPosition.y += heartDistance;
+    }
+}
+
+void Game::showEndScreen() { restartGame(); }

@@ -13,8 +13,9 @@
 #include "entity.h"
 
 class Player : public HitboxedDrawableEntity {
-
   public:
+    int lives = 3;
+
     Player() = default;
     Player(std::unique_ptr<Shape> &&shape)
         : DrawableEntity(std::move(shape)), HitboxedDrawableEntity(nullptr) {}

@@ -47,6 +47,28 @@ struct GameSettings {
     bool showHitboxes = false;
 };
 
+struct TimeBundle {
+    float currentFrameTime;
+    float lastFrameTime;
+    float gameStartTime;
+
+    TimeBundle()
+        : currentFrameTime(static_cast<float>(glfwGetTime())),
+          lastFrameTime(static_cast<float>(glfwGetTime())),
+          gameStartTime(0.0f) {}
+
+    void update() {
+        lastFrameTime = currentFrameTime;
+        currentFrameTime = static_cast<float>(glfwGetTime());
+    }
+
+    void reset() {
+        currentFrameTime = static_cast<float>(glfwGetTime());
+        lastFrameTime = currentFrameTime;
+        gameStartTime = currentFrameTime;
+    }
+};
+
 struct Game {
     Camera cam;
     std::shared_ptr<Player> player;
@@ -59,14 +81,26 @@ struct Game {
     TextureFactory textureFactory;
     ShaderBundle shaders;
     std::unique_ptr<Shape> axes[6]; // for debugging
-    float deltaTime = 0.f;
-    float currentFrameTime = static_cast<float>(glfwGetTime());
-    float lastFrameTime = static_cast<float>(glfwGetTime());
+    TimeBundle timeBundle;
     TextRenderer Text;
     GameSettings settings;
 
     Game() { loadAssets(); }
 
+    float deltaTime() {
+        return timeBundle.currentFrameTime - timeBundle.lastFrameTime;
+    }
+    float gameplayTime() {
+        return timeBundle.currentFrameTime - timeBundle.gameStartTime;
+    }
+    float gameStartTime() { return timeBundle.gameStartTime; }
+    float currentFrameTime() { return timeBundle.currentFrameTime; }
+    float lastFrameTime() { return timeBundle.lastFrameTime; }
+    void updateTimes() { timeBundle.update(); }
+    void restartTimes() { timeBundle.reset(); }
+    void clearNonPlayerEntities();
+    void startGame();
+    void restartGame();
     void setupGame();
     int loadFont();
     void updateScene();
@@ -78,7 +112,9 @@ struct Game {
                            std::optional<glm::vec3> color = std::nullopt);
     void loadAssets();
     void spawnPlayer();
+    void resetPlayer();
     void spawnPlates();
+    void resetPlates();
     void movePlate();
     void spawnEmiter(float time_between_shots,
                      glm::vec3 position = glm::vec3(0.f),
@@ -101,6 +137,10 @@ struct Game {
     void drawText(TextData &text);
     void bundledDrawText(std::vector<TextData> &texts);
     void drawBulletsInstanced();
+    void showHeart(glm::vec3 pos);
+    void showPlayerLives();
+    bool shouldEnd() { return player->lives <= 0; }
+    void showEndScreen();
 
     void onFramebufferResize(GLFWwindow *window, int width, int height) {
         glViewport(0, 0, width, height);

@@ -41,12 +41,7 @@ void processInput(GLFWwindow *window, Game &game, float deltaTime) {
         game.movePlate();
     }
     if (isPressed(window, KEYBIND_RESET)) {
-        for (auto &plate : game.plates) {
-            plate->setPosition(0.f, 0.f, 0.f);
-            plate->setRotation(0.f, 0.f, 0.f);
-        }
-        game.player->setPosition(0.f, 0.f, 0.f);
-        game.player->setRotation(0.f, 0.f, 0.f);
+        game.restartGame();
     }
     if (isPressed(window, KEYBIND_SHOW_HITBOXES)) {
         game.settings.showHitboxes = !game.settings.showHitboxes;

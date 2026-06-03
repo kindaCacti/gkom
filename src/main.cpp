@@ -27,9 +27,8 @@
 #include "settings.h"
 // settings
 
-
 int main() {
-    gameSettings = std::move(loadSettingsFromYaml(SETTINGS_FILE_PATH));    
+    gameSettings = std::move(loadSettingsFromYaml(SETTINGS_FILE_PATH));
 
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -40,7 +39,8 @@ int main() {
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
     GLFWwindow *window =
-        glfwCreateWindow(gameSettings.windowWidth, gameSettings.windowHeight, gameSettings.title.c_str(), NULL, NULL);
+        glfwCreateWindow(gameSettings.windowWidth, gameSettings.windowHeight,
+                         gameSettings.title.c_str(), NULL, NULL);
     if (window == NULL) {
         std::cout << "Failed to create GLFW window" << std::endl;
         glfwTerminate();
@@ -77,7 +77,7 @@ int main() {
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
         game.setupScene();
 
-        if(game.loadFont()) {
+        if (game.loadFont()) {
             return -1;
         }
 
@@ -85,11 +85,17 @@ int main() {
         glEnable(GL_DEPTH_TEST);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+        game.restartGame();
         while (!glfwWindowShouldClose(window)) {
             gameStateData.newFrame();
             game.doFramePreprocessing();
-            processInput(window, game, game.deltaTime);
+            processInput(window, game, game.deltaTime());
             game.updateScene();
+
+            if (game.shouldEnd()) {
+                game.showEndScreen();
+                continue; // temporary
+            }
 
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
