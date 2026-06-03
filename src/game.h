@@ -33,6 +33,11 @@ const GameControlsMode CONTROLS_MODE = THIRD_PERSON;
 #include "text/text.h"
 #include "text/text_data.h"
 
+// Forward declarations for types stored via pointers/references.
+class Enemy;
+class Player;
+class Plate;
+
 struct ShaderBundle {
     std::shared_ptr<Shader> gameShader;
     std::shared_ptr<Shader> textShader;
@@ -45,6 +50,7 @@ struct GameSettings {
     int startingEmmitersCount = 1;
     float addEmmiterAfterTime = 1.0f;
     bool showHitboxes = false;
+    bool showSpawningAreas = false;
 };
 
 struct TimeBundle {
@@ -69,13 +75,72 @@ struct TimeBundle {
     }
 };
 
+struct SpawnArea {
+    float xMin, xMax, yMin, yMax, zLevel;
+
+    float surfaceArea() const { return (xMax - xMin) * (yMax - yMin); }
+    glm::vec3 randomSample() const {
+        float x = xMin + static_cast<float>(rand()) / RAND_MAX * (xMax - xMin);
+        float y = yMin + static_cast<float>(rand()) / RAND_MAX * (yMax - yMin);
+        return glm::vec3(x, y, zLevel);
+    }
+};
+
+struct SpawnAreas {
+    std::vector<SpawnArea> areas;
+    float totalSurfaceArea = 0.f;
+
+    SpawnAreas(std::initializer_list<SpawnArea> initAreas) : areas(initAreas) {
+        for (const auto &area : areas) {
+            totalSurfaceArea += area.surfaceArea();
+        }
+    }
+
+    glm::vec3 randomSample() const {
+        float r = static_cast<float>(rand()) / RAND_MAX * totalSurfaceArea;
+        float cumulative = 0.f;
+        for (const auto &area : areas) {
+            cumulative += area.surfaceArea();
+            if (r <= cumulative) {
+                return area.randomSample();
+            }
+        }
+        return areas.back().randomSample(); // Fallback, should rarely happen
+    }
+
+    void drawDebug(const std::shared_ptr<Shader> &shader, Shape &shape) const {
+        for (const auto &area : areas) {
+            shape.transform = Transform();
+            shape.transform.translate(glm::vec3((area.xMin + area.xMax) / 2.f,
+                                                (area.yMin + area.yMax) / 2.f,
+                                                area.zLevel + 0.5f));
+            shape.transform.scale(glm::vec3((area.xMax - area.xMin),
+                                            (area.yMax - area.yMin), 1.f));
+            shape.draw(*shader, glm::mat4(1.0f), GL_LINES);
+        }
+    }
+};
+
+const SpawnAreas SPAWNING_AREAS({
+    {-13.f, -6.f, 35.f, 39.f, 0.68f},
+    {14.f, 19.f, 35.f, 39.f, 0.68f},
+    {21.5f, 22.5f, 30.f, 36.f, 0.68f},
+    {21.5f, 26.f, 10.f, 16.f, 0.68f},
+    // Mirror on the x and y axes
+    {6.f, 13.f, -39.f, -35.f, 0.68f},
+    {-19.f, -14.f, -39.f, -35.f, 0.68f},
+    {-22.5f, -21.5f, -36.f, -30.f, 0.68f},
+    {-26.f, -21.5f, -16.f, -10.f, 0.68f},
+});
+
 struct Game {
     Camera cam;
     std::shared_ptr<Player> player;
     std::vector<std::shared_ptr<Plate>> plates;
-    std::list<std::shared_ptr<emiter>> emiters;
+    std::list<std::shared_ptr<Enemy>> enemies;
     std::vector<std::shared_ptr<Shape>> shapes;
     std::unique_ptr<Shape> hitboxShape;
+    std::unique_ptr<Shape> spawningAreaShape;
     BulletBuffer bulletBuffer;
     ShapeFactory shapeFactory;
     TextureFactory textureFactory;
@@ -116,10 +181,9 @@ struct Game {
     void spawnPlates();
     void resetPlates();
     void movePlate();
-    void spawnEmiter(float time_between_shots,
-                     glm::vec3 position = glm::vec3(0.f),
-                     glm::vec3 rotation = glm::vec3(0.f));
-    void spawnRandomemiter();
+    void spawnEnemy(glm::vec3 position = glm::vec3(0.f),
+                    glm::vec3 rotation = glm::vec3(0.f));
+    void spawnRandomEnemy();
     void snapPlayerIntoArea();
     void shootIfTime(float speed);
     void moveRemoveBullets();

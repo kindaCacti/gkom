@@ -46,4 +46,7 @@ void processInput(GLFWwindow *window, Game &game, float deltaTime) {
     if (isPressed(window, KEYBIND_SHOW_HITBOXES)) {
         game.settings.showHitboxes = !game.settings.showHitboxes;
     }
+    if (isPressed(window, KEYBIND_SHOW_SPAWNING_AREAS)) {
+        game.settings.showSpawningAreas = !game.settings.showSpawningAreas;
+    }
 }

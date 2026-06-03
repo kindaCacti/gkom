@@ -15,27 +15,34 @@
 #include "../defines.h"
 #include "../bullet_buffer.h"
 
-class emiter : public virtual DrawableEntity {
+class emiter : public virtual Entity {
+  protected:
     float _lastShotTime;
     float _timeBetweenShots;
 
   public:
-    emiter(std::unique_ptr<Shape> &&shape, float currentTime,
-           float timeBetweenShots)
-        : DrawableEntity(std::move(shape)), _lastShotTime(currentTime),
+    void setTimeBetweenShots(float timeBetweenShots) {
+        _timeBetweenShots = timeBetweenShots;
+    }
+
+    float getTimeBetweenShots() const { return _timeBetweenShots; }
+
+    emiter(float currentTime, float timeBetweenShots)
+        : Entity(), _lastShotTime(currentTime),
           _timeBetweenShots(timeBetweenShots) {}
 
-    std::shared_ptr<Bullet> shootIfTime(ShapeFactory &shapeFactory,
-                                        float currentTime, float speed);
+    virtual std::vector<std::shared_ptr<Bullet>>
+    shootIfTime(ShapeFactory &shapeFactory, float currentTime, float speed);
 
-    void shootIfTime(ShapeFactory &shapeFactory, float currentTime, float speed,
-                     BulletBuffer &bulletBuffer);
+    virtual void shootIfTime(ShapeFactory &shapeFactory, float currentTime,
+                             float speed, BulletBuffer &bulletBuffer);
 
-    std::shared_ptr<Bullet> shoot(std::unique_ptr<Shape> &&bulletShape,
-                                  float currentTime, float speed);
+    virtual std::vector<std::shared_ptr<Bullet>>
+    shoot(std::unique_ptr<Shape> &&bulletShape, float currentTime, float speed);
 
-    void shoot(std::unique_ptr<Shape> &&bullet_shape, float current_time,
-               float speed, BulletBuffer &bulletBuffer);
+    virtual void shoot(std::unique_ptr<Shape> &&bullet_shape,
+                       float current_time, float speed,
+                       BulletBuffer &bulletBuffer);
 };
 
 #endif
