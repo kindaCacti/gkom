@@ -36,11 +36,20 @@ void processInput(GLFWwindow *window, Game &game, float deltaTime) {
             float sumDist2 = 0.0f;
         };
 
+        auto collidesAnyPlate = [&]() {
+            for (const auto &plate : game.plates) {
+                if (game.player->check_3D_collision(plate.get(), true)) {
+                    return true;
+                }
+            }
+            return false;
+        };
+
         auto collisionScore = [&]() -> CollisionScore {
             CollisionScore s;
             const glm::vec3 pc = game.player->hitboxCenterWorld();
             for (const auto &plate : game.plates) {
-                if (game.player->check_3D_collision(plate.get())) {
+                if (game.player->check_3D_collision(plate.get(), true)) {
                     ++s.collisions;
                     const glm::vec3 qc = plate->hitboxCenterWorld();
                     const glm::vec3 d = qc - pc;
@@ -67,8 +76,11 @@ void processInput(GLFWwindow *window, Game &game, float deltaTime) {
         const int steps = std::min(stepsRaw, 4);
         const glm::vec3 perStep = move_vec / float(steps);
 
-        CollisionScore currentScore = collisionScore();
-        const bool startedIntersecting = currentScore.collisions > 0;
+        bool startedIntersecting = collidesAnyPlate();
+        CollisionScore currentScore;
+        if (startedIntersecting) {
+            currentScore = collisionScore();
+        }
 
         auto tryMove = [&](const glm::vec3 &delta) {
             if (delta.x == 0.0f && delta.y == 0.0f && delta.z == 0.0f)
@@ -77,19 +89,28 @@ void processInput(GLFWwindow *window, Game &game, float deltaTime) {
             const glm::vec3 beforePos = game.player->get_pos();
 
             game.player->move(delta.x, delta.y, delta.z);
-            const CollisionScore afterScore = collisionScore();
 
-            if (afterScore.collisions == 0) {
-                currentScore = afterScore;
+            // Common case: we didn't start inside an obstacle.
+            // Only a boolean collision check is needed (much cheaper than a
+            // full score).
+            if (!startedIntersecting) {
+                if (collidesAnyPlate()) {
+                    game.player->setPosition(beforePos.x, beforePos.y,
+                                             beforePos.z);
+                    return false;
+                }
                 return true;
             }
 
-            if (!startedIntersecting) {
-                game.player->setPosition(beforePos.x, beforePos.y, beforePos.z);
-                return false;
+            // Special case: we started intersecting; use score to allow moving
+            // out.
+            const CollisionScore afterScore = collisionScore();
+            if (afterScore.collisions == 0) {
+                // Escaped collision: switch to normal mode for remaining steps.
+                startedIntersecting = false;
+                return true;
             }
 
-            // If already intersecting, allow only improvements.
             if (isBetter(afterScore, currentScore)) {
                 currentScore = afterScore;
                 return true;
@@ -127,7 +148,7 @@ void processInput(GLFWwindow *window, Game &game, float deltaTime) {
     }
 
     if (glfwGetMouseButton(window, KEYBIND_MOVE_PLATE) == GLFW_PRESS) {
-        game.movePlate();
+        game.movePlate(deltaTime);
     } else {
         game.stopMovingPlate();
     }

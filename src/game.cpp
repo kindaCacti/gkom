@@ -9,6 +9,8 @@
 #include <list>
 #include <algorithm>
 #include <cmath>
+#include <array>
+#include <cstdio>
 
 #include "game.h"
 #include "camera.h"
@@ -45,8 +47,12 @@ void Game::updateScene() {
     auto tbe = gameSettings.is_benchmark
                    ? BENCHMARK_SPAWNING_NEW_EMMITERS_AFTER_TIME
                    : SPAWNING_NEW_EMMITERS_AFTER_TIME;
-    while (currentFrameTime() - enemies.size() * tbe > 0) {
+    int spawnedThisFrame = 0;
+    const int maxSpawnsPerFrame = 2;
+    while (currentFrameTime() - enemies.size() * tbe > 0 &&
+           spawnedThisFrame < maxSpawnsPerFrame) {
         spawnRandomEnemy();
+        ++spawnedThisFrame;
     }
     shootIfTime(BULLET_SPEED);
     moveRemoveBullets();
@@ -211,7 +217,7 @@ void Game::resetPlates() {
     plates[2]->setRotation(glm::vec3(0.f, 0.f, 0.f));
 }
 
-void Game::movePlate() {
+void Game::movePlate(float deltaTime) {
     // find nearest palte to the player
     auto base = player->get_pos() +
                 glm::vec3(0.f, 0.f, 1.3f); // slightly above the player
@@ -249,10 +255,27 @@ void Game::movePlate() {
     auto offset = dir * 1.75f; // distance from player
     auto oldPos = plate->get_pos();
     auto oldRot = plate->get_rot();
-    plate->setPosition(base + offset);
+    auto newPos = base + offset;
+    auto dPos = newPos - oldPos;
+    if (glm::length(dPos) > 0.2f) {
+        dPos = glm::normalize(dPos) * deltaTime * 20.f;
+    }
     // rotate the plate to face the player
     float angle = std::atan2(dir.y, dir.x);
-    plate->setRotation(glm::vec3(-90.f, 0.f, glm::degrees(angle) + 90.f));
+    auto newRot = glm::vec3(-90.f, 0.f, glm::degrees(angle) + 90.f);
+    // find shortest rotation direction, taking into account angle wrapping
+    auto dRot = newRot - oldRot;
+    dRot.x = std::fmod(dRot.x + 180.f, 360.f) - 180.f;
+    dRot.y = std::fmod(dRot.y + 180.f, 360.f) - 180.f;
+    dRot.z = std::fmod(dRot.z + 180.f, 360.f) - 180.f;
+    dRot.x = std::fmod(dRot.x - 180.f, 360.f) + 180.f;
+    dRot.y = std::fmod(dRot.y - 180.f, 360.f) + 180.f;
+    dRot.z = std::fmod(dRot.z - 180.f, 360.f) + 180.f;
+    if (glm::length(dRot) > 3.f) {
+        dRot = glm::normalize(dRot) * deltaTime * 400.f;
+    }
+    plate->setPosition(oldPos + dPos);
+    plate->setRotation(oldRot + dRot);
     for (auto other_plate : plates) {
         if (other_plate != plate) {
             // if the plate collides with another plate, move it back to old
@@ -543,52 +566,68 @@ void Game::bundledDrawText(std::vector<TextData> &texts) {
     glEnable(GL_DEPTH_TEST);
 }
 
-inline auto formatVec3_1dp = [](const glm::vec3 &v) {
-    std::ostringstream oss;
-    oss << "(" << std::fixed << std::setprecision(1) << v.x << ", " << v.y
-        << ", " << v.z << ")";
-    return oss.str();
-};
-
 void Game::printStats() {
     int fps = std::round(1.0f / (deltaTime() + 0.0001f));
 
-    std::vector<TextData> texts = {
-        TextData{.text = std::string("fps: ") + std::to_string(fps),
+    static std::array<TextData, 5> texts = {
+        TextData{.text = "",
                  .x = 20.0f,
                  .y = 580.0f,
                  .scale = 0.3f,
-                 .color = glm::vec3(1.0f, 1.0f, 1.0f)},
-        TextData{.text = std::string("bullets: ") +
-                         std::to_string(bulletBuffer.activeElementCount()),
+                 .color = glm::vec3(1.0f)},
+        TextData{.text = "",
                  .x = 20.0f,
                  .y = 560.0f,
                  .scale = 0.3f,
-                 .color = glm::vec3(1.0f, 1.0f, 1.0f)},
-        TextData{.text = std::string("draw calls: ") +
-                         std::to_string(gameStateData.drawCallsMade),
+                 .color = glm::vec3(1.0f)},
+        TextData{.text = "",
                  .x = 20.0f,
                  .y = 540.0f,
                  .scale = 0.3f,
-                 .color = glm::vec3(1.0f, 1.0f, 1.0f)},
-        TextData{.text = std::string("score: ") +
-                         std::to_string(static_cast<int>(
-                             std::floor(gameplayTime() * 100))),
+                 .color = glm::vec3(1.0f)},
+        TextData{.text = "",
                  .x = 20.0f,
                  .y = 520.0f,
                  .scale = 0.3f,
-                 .color = glm::vec3(1.0f, 1.0f, 1.0f)},
-        TextData{.text = std::string("Player pos: ") +
-                         formatVec3_1dp(player->get_pos()),
+                 .color = glm::vec3(1.0f)},
+        TextData{.text = "",
                  .x = 20.0f,
                  .y = 500.0f,
                  .scale = 0.3f,
-                 .color = glm::vec3(1.0f, 1.0f, 1.0f)},
+                 .color = glm::vec3(1.0f)},
     };
+
+    // Reuse string capacity to avoid per-frame allocations.
+    texts[0].text.clear();
+    texts[0].text.append("fps: ");
+    texts[0].text.append(std::to_string(fps));
+
+    texts[1].text.clear();
+    texts[1].text.append("bullets: ");
+    texts[1].text.append(std::to_string(bulletBuffer.activeElementCount()));
+
+    texts[2].text.clear();
+    texts[2].text.append("draw calls: ");
+    texts[2].text.append(std::to_string(gameStateData.drawCallsMade));
+
+    texts[3].text.clear();
+    texts[3].text.append("score: ");
+    texts[3].text.append(
+        std::to_string(static_cast<int>(std::floor(gameplayTime() * 100))));
+
+    {
+        const glm::vec3 p = player->get_pos();
+        char buf[96];
+        std::snprintf(buf, sizeof(buf), "Player pos: (%.1f, %.1f, %.1f)", p.x,
+                      p.y, p.z);
+        texts[4].text.assign(buf);
+    }
 
     glDisable(GL_DEPTH_TEST);
 
-    bundledDrawText(texts);
+    for (auto &t : texts) {
+        Text.RenderText(t.text, t.x, t.y, t.scale, t.color);
+    }
 
     glEnable(GL_DEPTH_TEST);
 }

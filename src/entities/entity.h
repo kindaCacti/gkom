@@ -185,15 +185,22 @@ class HitboxedDrawableEntity : public virtual DrawableEntity {
 
     // Fast broad-phase radius (no sqrt).
     // Conservative: the farthest corner distance is <= sqrt(3)*maxHalfExtent.
-    float containingSphereRadius() const {
+    inline float containingSphereRadius() const {
         return _hitbox.containingSphereRadius();
     }
 
     glm::vec3 hitboxCenterWorld() const {
-        if (_hitbox.shape() == Hitbox::Shape::Cylinder) {
-            return glm::vec3(getCylinderHitboxTransformMatrix()[3]);
-        }
-        return glm::vec3(getHitboxTransformMatrix()[3]);
+        // Hitbox center is always at T * R * C, independent of scale.
+        const glm::vec3 off = _hitbox.centerOffset();
+        const float off2 = glm::dot(off, off);
+        if (off2 < 1e-12f)
+            return _pos;
+
+        if (_rot.x == 0.0f && _rot.y == 0.0f && _rot.z == 0.0f)
+            return _pos + off;
+
+        const glm::mat4 R = getEulerRotationMatrix(_rot);
+        return _pos + glm::vec3(R * glm::vec4(off, 0.0f));
     }
 
     float bottom_x() {
@@ -251,13 +258,33 @@ class HitboxedDrawableEntity : public virtual DrawableEntity {
         return c.z + _hitbox.boxHalfExtents().z;
     }
 
-    bool check_3D_collision(HitboxedDrawableEntity *other) {
+    bool check_3D_collision(HitboxedDrawableEntity *other,
+                            bool useBroadPhase = false) {
+        if (!other)
+            return false;
+        if (useBroadPhase && !broadPhaseIntersects(other))
+            return false;
         return intersects(other);
     }
 
-    bool intersects(HitboxedDrawableEntity *other) {
+    inline bool intersects(HitboxedDrawableEntity *other) {
+        if (!other)
+            return false;
         return _hitbox.intersects(other->_hitbox, _pos, _rot, other->_pos,
                                   other->_rot);
+    }
+
+    inline bool
+    broadPhaseIntersects(const HitboxedDrawableEntity *other) const {
+        if (!other)
+            return false;
+        const glm::vec3 a = hitboxCenterWorld();
+        const glm::vec3 b = other->hitboxCenterWorld();
+        const glm::vec3 d = b - a;
+        const float dist2 = d.x * d.x + d.y * d.y + d.z * d.z;
+        const float r =
+            containingSphereRadius() + other->containingSphereRadius();
+        return dist2 <= r * r;
     }
 
     glm::mat4 getHitboxTransformMatrix() const {

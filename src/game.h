@@ -182,7 +182,7 @@ struct Game {
     void resetPlayer();
     void spawnPlates();
     void resetPlates();
-    void movePlate();
+    void movePlate(float deltaTime);
     void stopMovingPlate();
     void spawnEnemy(glm::vec3 position = glm::vec3(0.f),
                     glm::vec3 rotation = glm::vec3(0.f));
