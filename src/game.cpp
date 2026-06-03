@@ -59,6 +59,21 @@ void Game::updateScene() {
     checkPlateCollision();
     checkPlayerCollision();
     updateCamera();
+
+    expensiveChecks = 0;
+    cheapChecks = 0;
+    veryCheapChecks = 0;
+    for (const auto &plate : plates) {
+        expensiveChecks += plate->expensiveCollisionChecks;
+        cheapChecks += plate->cheapCollisionChecks;
+        plate->resetCollisionCounters();
+    }
+    expensiveChecks += player->expensiveCollisionChecks;
+    cheapChecks += player->cheapCollisionChecks;
+    player->resetCollisionCounters();
+    expensiveChecks += bulletBuffer.expensiveCollisionChecks;
+    veryCheapChecks += bulletBuffer.cheapCollisionChecks;
+    bulletBuffer.resetCollisionCounters();
 }
 
 void Game::clearNonPlayerEntities() {
@@ -276,7 +291,7 @@ void Game::movePlate(float deltaTime) {
         if (other_plate != plate) {
             // if the plate collides with another plate, move it back to old
             // position
-            if (plate->check_3D_collision(other_plate.get())) {
+            if (plate->fastCollisionCheck(other_plate.get())) {
                 plate->setPosition(oldPos);
                 plate->setRotation(oldRot);
                 return;
@@ -298,10 +313,22 @@ void Game::spawnEnemy(glm::vec3 position, glm::vec3 rotation) {
         currentFrameTime()));
     enemies.back()->setPosition(position);
     enemies.back()->setRotation(rotation);
+    if (settings.benchmarkOn) {
+        // For benchmark, spawn stronger enemies to increase difficulty faster.
+        enemies.back()->upgrade(shapeFactory, currentFrameTime(), true);
+    }
 }
 
 void Game::spawnRandomEnemy() {
     glm::vec3 position = SPAWNING_AREAS.randomSample();
+    float angle = std::atan2(-position.y, -position.x); // angle towards center
+    glm::vec3 rotation = glm::vec3(
+        0.f, 0.f, glm::degrees(angle) + getRandomFloatBetween(-10.f, 10.f));
+    if (settings.benchmarkOn) {
+        spawnEnemy(position,
+                   rotation); // no rotation for benchmark enemies
+        return;
+    }
     // avoid spawning too close to existing enemies
     bool too_close = false;
     std::shared_ptr<Enemy> closest_enemy = nullptr;
@@ -317,9 +344,6 @@ void Game::spawnRandomEnemy() {
         closest_enemy->upgrade(shapeFactory, currentFrameTime());
         return;
     }
-    float angle = std::atan2(-position.y, -position.x); // angle towards center
-    glm::vec3 rotation = glm::vec3(
-        0.f, 0.f, glm::degrees(angle) + getRandomFloatBetween(-10.f, 10.f));
     spawnEnemy(position, rotation);
 }
 
@@ -487,22 +511,26 @@ void Game::updateCamera() {
 }
 
 void Game::checkPlayerCollision() {
-    if (gameSettings.is_benchmark)
+    if (!gameSettings.collisionsEnabled)
         return;
-
     for (int bulletId : bulletBuffer.checkActiveBulletCollision(player.get())) {
+        if (gameSettings.is_benchmark)
+            continue; // Don't deactivate bullets or reduce lives in benchmark
+        // mode.
         bulletBuffer.deactivateElement(static_cast<size_t>(bulletId));
         --player->lives;
     }
 }
 
 void Game::checkPlateCollision() {
-    if (gameSettings.is_benchmark)
+    if (!gameSettings.collisionsEnabled)
         return;
-
     for (auto &plate : plates) {
         for (int bulletId :
              bulletBuffer.checkActiveBulletCollision(plate.get())) {
+            if (gameSettings.is_benchmark)
+                continue; // Don't deactivate bullets or reduce lives in
+                          // benchmark mode.
             bulletBuffer.deactivateElement(static_cast<size_t>(bulletId));
         }
     }
@@ -570,7 +598,7 @@ void Game::bundledDrawText(std::vector<TextData> &texts) {
 void Game::printStats() {
     int fps = std::round(1.0f / (deltaTime() + 0.0001f));
 
-    static std::array<TextData, 5> texts = {
+    static std::array<TextData, 6> texts = {
         TextData{.text = "",
                  .x = 20.0f,
                  .y = 580.0f,
@@ -594,6 +622,11 @@ void Game::printStats() {
         TextData{.text = "",
                  .x = 20.0f,
                  .y = 500.0f,
+                 .scale = 0.3f,
+                 .color = glm::vec3(1.0f)},
+        TextData{.text = "",
+                 .x = 20.0f,
+                 .y = 480.0f,
                  .scale = 0.3f,
                  .color = glm::vec3(1.0f)},
     };
@@ -622,6 +655,13 @@ void Game::printStats() {
         std::snprintf(buf, sizeof(buf), "Player pos: (%.1f, %.1f, %.1f)", p.x,
                       p.y, p.z);
         texts[4].text.assign(buf);
+    }
+
+    {
+        char buf[96];
+        std::snprintf(buf, sizeof(buf), "Collisions - E: %d, C: %d, V: %d",
+                      expensiveChecks, cheapChecks, veryCheapChecks);
+        texts[5].text.assign(buf);
     }
 
     glDisable(GL_DEPTH_TEST);

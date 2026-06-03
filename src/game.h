@@ -151,6 +151,9 @@ struct Game {
     TimeBundle timeBundle;
     TextRenderer Text;
     GameSettings settings;
+    int expensiveChecks = 0;
+    int cheapChecks = 0;
+    int veryCheapChecks = 0;
 
     Game() { loadAssets(); }
 

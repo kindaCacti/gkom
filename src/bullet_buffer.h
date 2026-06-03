@@ -84,6 +84,13 @@ class BulletBuffer {
                                      cylinderHitboxShape);
         }
     }
+    int expensiveCollisionChecks = 0;
+    int cheapCollisionChecks = 0;
+
+    void resetCollisionCounters() {
+        expensiveCollisionChecks = 0;
+        cheapCollisionChecks = 0;
+    }
 
     std::vector<int>
     checkActiveBulletCollision(HitboxedDrawableEntity *target) {
@@ -98,6 +105,7 @@ class BulletBuffer {
         std::vector<int> collisions;
         for (size_t i = 0; i < _activeCount; i++) {
             // Cheap bb reject before expensive intersection calculation.
+            ++cheapCollisionChecks;
             const glm::vec3 d =
                 _elements[i]->hitboxCenterWorld() - target->hitboxCenterWorld();
             const float d2 = d.x * d.x + d.y * d.y + d.z * d.z;
@@ -105,6 +113,7 @@ class BulletBuffer {
                 continue;
 
             // Precise check:
+            ++expensiveCollisionChecks;
             if (_elements[i]->intersects(target))
                 collisions.push_back(static_cast<int>(i));
         }

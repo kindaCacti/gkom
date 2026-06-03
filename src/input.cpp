@@ -38,7 +38,7 @@ void processInput(GLFWwindow *window, Game &game, float deltaTime) {
 
         auto collidesAnyPlate = [&]() {
             for (const auto &plate : game.plates) {
-                if (game.player->check_3D_collision(plate.get(), true)) {
+                if (game.player->fastCollisionCheck(plate.get())) {
                     return true;
                 }
             }
@@ -49,7 +49,7 @@ void processInput(GLFWwindow *window, Game &game, float deltaTime) {
             CollisionScore s;
             const glm::vec3 pc = game.player->hitboxCenterWorld();
             for (const auto &plate : game.plates) {
-                if (game.player->check_3D_collision(plate.get(), true)) {
+                if (game.player->fastCollisionCheck(plate.get())) {
                     ++s.collisions;
                     const glm::vec3 qc = plate->hitboxCenterWorld();
                     const glm::vec3 d = qc - pc;

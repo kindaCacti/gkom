@@ -156,6 +156,9 @@ class HitboxedDrawableEntity : public virtual DrawableEntity {
     }
 
   public:
+    int expensiveCollisionChecks = 0;
+    int cheapCollisionChecks = 0;
+
     HitboxedDrawableEntity(std::unique_ptr<Shape> &&shape,
                            glm::vec3 /*hitbox_size*/)
         : DrawableEntity(std::move(shape)) {
@@ -259,11 +262,10 @@ class HitboxedDrawableEntity : public virtual DrawableEntity {
         return c.z + _hitbox.boxHalfExtents().z;
     }
 
-    bool check_3D_collision(HitboxedDrawableEntity *other,
-                            bool useBroadPhase = false) {
+    bool fastCollisionCheck(HitboxedDrawableEntity *other) {
         if (!other)
             return false;
-        if (useBroadPhase && !broadPhaseIntersects(other))
+        if (!broadPhaseIntersects(other))
             return false;
         return intersects(other);
     }
@@ -271,14 +273,15 @@ class HitboxedDrawableEntity : public virtual DrawableEntity {
     inline bool intersects(HitboxedDrawableEntity *other) {
         if (!other)
             return false;
+        ++expensiveCollisionChecks;
         return _hitbox.intersects(other->_hitbox, _pos, _rot, other->_pos,
                                   other->_rot);
     }
 
-    inline bool
-    broadPhaseIntersects(const HitboxedDrawableEntity *other) const {
+    inline bool broadPhaseIntersects(const HitboxedDrawableEntity *other) {
         if (!other)
             return false;
+        ++cheapCollisionChecks;
         const glm::vec3 a = hitboxCenterWorld();
         const glm::vec3 b = other->hitboxCenterWorld();
         const glm::vec3 d = b - a;
@@ -286,6 +289,11 @@ class HitboxedDrawableEntity : public virtual DrawableEntity {
         const float r =
             containingSphereRadius() + other->containingSphereRadius();
         return dist2 <= r * r;
+    }
+
+    inline void resetCollisionCounters() {
+        expensiveCollisionChecks = 0;
+        cheapCollisionChecks = 0;
     }
 
     glm::mat4 getHitboxTransformMatrix() const {

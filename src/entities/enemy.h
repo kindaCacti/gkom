@@ -106,7 +106,15 @@ class Enemy : public HitboxedDrawableEntity, public emiter {
         }
     }
 
-    void upgrade(ShapeFactory &shapeFactory, float currentTime) {
+    void upgrade(ShapeFactory &shapeFactory, float currentTime,
+                 bool benchmarkUpgrade = false) {
+        if (benchmarkUpgrade) {
+            setType(COFFEE_MAKER, shapeFactory, currentTime);
+            for (auto &em : _primitiveEmitters) {
+                em.setTimeBetweenShots(0.05f);
+            }
+            return;
+        }
         switch (type) {
         case ORDINARY_COFFEE:
             setType(ESPRESSO, shapeFactory, currentTime);
