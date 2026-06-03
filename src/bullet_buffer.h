@@ -106,35 +106,6 @@ class BulletBuffer {
         cheapCollisionChecks = 0;
     }
 
-    std::vector<int>
-    checkActiveBulletCollision(HitboxedDrawableEntity *target) {
-        if (_activeCount == 0)
-            return {};
-        // We assume that each bullet's bounding box is the same size, so we can
-        // precompute the sum of the containing sphere radii.
-        const float max_dist = _elements[0]->containingSphereRadius() +
-                               target->containingSphereRadius();
-        const float md2 =
-            max_dist * max_dist; // Compare squared distances to avoid sqrt
-        std::vector<int> collisions;
-        const glm::vec3 targetCenter = target->hitboxCenterWorld();
-        for (size_t i = 0; i < _activeCount; i++) {
-            // Cheap bb reject before expensive intersection calculation.
-            ++cheapCollisionChecks;
-            const glm::vec3 d =
-                _elements[i]->hitboxCenterWorldCached() - targetCenter;
-            const float d2 = d.x * d.x + d.y * d.y + d.z * d.z;
-            if (d2 > md2) // No collision possible
-                continue;
-
-            // Precise check:
-            ++expensiveCollisionChecks;
-            if (_elements[i]->intersects(target))
-                collisions.push_back(static_cast<int>(i));
-        }
-        return collisions;
-    }
-
     // Single-pass collision against multiple targets.
     // Checks each bullet against targets in order and triggers at most one hit
     // callback per bullet (the first target hit).

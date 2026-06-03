@@ -200,8 +200,6 @@ struct Game {
     void setupDefaultScene();
     void setupBenchmarkScene();
     void updateCamera();
-    void checkPlayerCollision();
-    void checkPlateCollision();
     void checkBulletCollisions();
     void drawEntities();
     void printStats();

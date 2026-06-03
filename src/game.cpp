@@ -509,32 +509,6 @@ void Game::updateCamera() {
     shader_utils::set_blinn_phong_camera(*shaders.gameShader, cam.getMatrix());
 }
 
-void Game::checkPlayerCollision() {
-    if (!gameSettings.collisionsEnabled)
-        return;
-    for (int bulletId : bulletBuffer.checkActiveBulletCollision(player.get())) {
-        if (gameSettings.is_benchmark)
-            continue; // Don't deactivate bullets or reduce lives in benchmark
-        // mode.
-        bulletBuffer.deactivateElement(static_cast<size_t>(bulletId));
-        --player->lives;
-    }
-}
-
-void Game::checkPlateCollision() {
-    if (!gameSettings.collisionsEnabled)
-        return;
-    for (auto &plate : plates) {
-        for (int bulletId :
-             bulletBuffer.checkActiveBulletCollision(plate.get())) {
-            if (gameSettings.is_benchmark)
-                continue; // Don't deactivate bullets or reduce lives in
-                          // benchmark mode.
-            bulletBuffer.deactivateElement(static_cast<size_t>(bulletId));
-        }
-    }
-}
-
 void Game::checkBulletCollisions() {
     if (!gameSettings.collisionsEnabled)
         return;
