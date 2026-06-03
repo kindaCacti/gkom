@@ -29,17 +29,77 @@ void processInput(GLFWwindow *window, Game &game, float deltaTime) {
     right_dir *= step;
 
     auto moveWithCollision = [&](const glm::vec3 &move_vec) {
-        game.player->move(move_vec.x, move_vec.y, move_vec.z);
-        for (const auto &plate : game.plates) {
-            if (game.player->check_3D_collision(plate.get())) {
-                game.player->move(-move_vec.x, -move_vec.y, -move_vec.z);
+        struct CollisionScore {
+            int collisions = 0;
+            float sumDist2 = 0.0f;
+        };
+
+        auto collisionScore = [&]() -> CollisionScore {
+            CollisionScore s;
+            const glm::vec3 pc = game.player->hitboxCenterWorld();
+            for (const auto &plate : game.plates) {
                 if (game.player->check_3D_collision(plate.get())) {
-                    // if still colliding, allow movement to avoid getting stuck
-                    game.player->move(move_vec.x, move_vec.y, move_vec.z);
+                    ++s.collisions;
+                    const glm::vec3 qc = plate->hitboxCenterWorld();
+                    const glm::vec3 d = qc - pc;
+                    s.sumDist2 += d.x * d.x + d.y * d.y + d.z * d.z;
                 }
-                break;
             }
+            return s;
+        };
+
+        auto isBetter = [](const CollisionScore &a, const CollisionScore &b) {
+            if (a.collisions != b.collisions)
+                return a.collisions < b.collisions;
+            // If collisions count is the same, prefer being farther away from
+            // colliding hitbox centers (heuristic for moving "out").
+            return a.sumDist2 > b.sumDist2 + 1e-6f;
+        };
+
+        const CollisionScore startScore = collisionScore();
+        const bool startedIntersecting = startScore.collisions > 0;
+
+        auto tryMove = [&](const glm::vec3 &delta) {
+            if (delta.x == 0.0f && delta.y == 0.0f && delta.z == 0.0f)
+                return true;
+
+            const glm::vec3 beforePos = game.player->get_pos();
+            const CollisionScore beforeScore = collisionScore();
+
+            game.player->move(delta.x, delta.y, delta.z);
+            const CollisionScore afterScore = collisionScore();
+
+            if (afterScore.collisions == 0) {
+                return true;
+            }
+
+            // Normal case: reject any move that causes intersection.
+            if (!startedIntersecting) {
+                game.player->setPosition(beforePos.x, beforePos.y, beforePos.z);
+                return false;
+            }
+
+            // Special case: already intersecting (e.g., spawned inside) — allow
+            // movement that improves the situation, but block movement that
+            // makes it worse ("not further in").
+            if (isBetter(afterScore, beforeScore)) {
+                return true;
+            }
+
+            game.player->setPosition(beforePos.x, beforePos.y, beforePos.z);
+            return false;
+        };
+
+        // First try the full movement.
+        if (tryMove(move_vec)) {
+            return;
         }
+
+        // If blocked, slide along obstacles by trying axis-separated movement.
+        // Order matters: X then Y tends to feel natural for WASD.
+        tryMove(glm::vec3(move_vec.x, 0.0f, 0.0f));
+        tryMove(glm::vec3(0.0f, move_vec.y, 0.0f));
+        tryMove(glm::vec3(0.0f, 0.0f, move_vec.z));
     };
 
     if (isPressed(window, KEYBIND_MOVE_FORWARD)) {
@@ -61,6 +121,8 @@ void processInput(GLFWwindow *window, Game &game, float deltaTime) {
 
     if (glfwGetMouseButton(window, KEYBIND_MOVE_PLATE) == GLFW_PRESS) {
         game.movePlate();
+    } else {
+        game.stopMovingPlate();
     }
     if (isPressed(window, KEYBIND_RESET)) {
         game.restartGame();

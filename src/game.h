@@ -137,6 +137,7 @@ struct Game {
     Camera cam;
     std::shared_ptr<Player> player;
     std::vector<std::shared_ptr<Plate>> plates;
+    std::shared_ptr<Plate> currentlyMovingPlate;
     std::list<std::shared_ptr<Enemy>> enemies;
     std::vector<std::shared_ptr<Shape>> shapes;
     std::unique_ptr<Shape> hitboxShape;
@@ -182,6 +183,7 @@ struct Game {
     void spawnPlates();
     void resetPlates();
     void movePlate();
+    void stopMovingPlate();
     void spawnEnemy(glm::vec3 position = glm::vec3(0.f),
                     glm::vec3 rotation = glm::vec3(0.f));
     void spawnRandomEnemy();
