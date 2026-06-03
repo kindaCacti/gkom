@@ -28,14 +28,36 @@ void processInput(GLFWwindow *window, Game &game, float deltaTime) {
     forward_dir *= step;
     right_dir *= step;
 
-    if (isPressed(window, KEYBIND_MOVE_FORWARD))
-        game.player->move(forward_dir.x, forward_dir.y, forward_dir.z);
-    if (isPressed(window, KEYBIND_MOVE_BACKWARD))
-        game.player->move(-forward_dir.x, -forward_dir.y, -forward_dir.z);
-    if (isPressed(window, KEYBIND_MOVE_LEFT))
-        game.player->move(-right_dir.x, -right_dir.y, -right_dir.z);
-    if (isPressed(window, KEYBIND_MOVE_RIGHT))
-        game.player->move(right_dir.x, right_dir.y, right_dir.z);
+    auto moveWithCollision = [&](const glm::vec3 &move_vec) {
+        game.player->move(move_vec.x, move_vec.y, move_vec.z);
+        for (const auto &plate : game.plates) {
+            if (game.player->check_3D_collision(plate.get())) {
+                game.player->move(-move_vec.x, -move_vec.y, -move_vec.z);
+                if (game.player->check_3D_collision(plate.get())) {
+                    // if still colliding, allow movement to avoid getting stuck
+                    game.player->move(move_vec.x, move_vec.y, move_vec.z);
+                }
+                break;
+            }
+        }
+    };
+
+    if (isPressed(window, KEYBIND_MOVE_FORWARD)) {
+        glm::vec3 moveVec = {forward_dir.x, forward_dir.y, forward_dir.z};
+        moveWithCollision(moveVec);
+    }
+    if (isPressed(window, KEYBIND_MOVE_BACKWARD)) {
+        glm::vec3 moveVec = {-forward_dir.x, -forward_dir.y, -forward_dir.z};
+        moveWithCollision(moveVec);
+    }
+    if (isPressed(window, KEYBIND_MOVE_LEFT)) {
+        glm::vec3 moveVec = {-right_dir.x, -right_dir.y, -right_dir.z};
+        moveWithCollision(moveVec);
+    }
+    if (isPressed(window, KEYBIND_MOVE_RIGHT)) {
+        glm::vec3 moveVec = {right_dir.x, right_dir.y, right_dir.z};
+        moveWithCollision(moveVec);
+    }
 
     if (glfwGetMouseButton(window, KEYBIND_MOVE_PLATE) == GLFW_PRESS) {
         game.movePlate();

@@ -190,21 +190,21 @@ void Game::spawnPlates() {
 }
 
 void Game::resetPlates() {
-    for (auto &plate : plates) {
-        plate->setPosition(0.f, 0.f, 0.f);
-        plate->setRotation(0.f, 0.f, 0.f);
-    }
+    plates[0]->setPosition(glm::vec3(0.f, 0.f, 0.f));
+    plates[0]->setRotation(glm::vec3(0.f, 0.f, 0.f));
+    plates[1]->setPosition(glm::vec3(5.f, 5.f, 0.f));
+    plates[1]->setRotation(glm::vec3(0.f, 0.f, 0.f));
+    plates[2]->setPosition(glm::vec3(-5.f, -5.f, 0.f));
+    plates[2]->setRotation(glm::vec3(0.f, 0.f, 0.f));
 }
 
 void Game::movePlate() {
     // find nearest palte to the player
     auto base = player->get_pos() +
-                glm::vec3(0.f, 0.f, 1.2f); // slightly above the player
+                glm::vec3(0.f, 0.f, 1.3f); // slightly above the player
     auto dir = cam.getXYDirection();
-    auto nose =
-        base +
-        dir *
-            1.f; // point in front of the player where the plate should move to
+    auto nose = base + dir * 1.75f; // point in front of the player where the
+                                    // plate should move to
     std::shared_ptr<Plate> plate = nullptr;
     float min_dist_sq = std::numeric_limits<float>::max();
     for (const auto &p : plates) {
@@ -215,17 +215,28 @@ void Game::movePlate() {
         }
     }
     if (!plate ||
-        min_dist_sq > 4.0f) { // if no plate is close enough, do nothing
+        min_dist_sq > 3.0f) { // if no plate is close enough, do nothing
         return;
     }
     // move the plate in front of the palyer as a shield
-    auto offset = dir * 1.5f; // distance from player
+    auto offset = dir * 1.75f; // distance from player
+    auto oldPos = plate->get_pos();
+    auto oldRot = plate->get_rot();
     plate->setPosition(base + offset);
     // rotate the plate to face the player
     float angle = std::atan2(dir.y, dir.x);
     plate->setRotation(glm::vec3(-90.f, 0.f, glm::degrees(angle) + 90.f));
-    // rotate plate 90 degrees to be vertical
-    // plate->rotate(glm::vec3(90.f, 0.f, 0.f));
+    for (auto other_plate : plates) {
+        if (other_plate != plate) {
+            // if the plate collides with another plate, move it back to old
+            // position
+            if (plate->check_3D_collision(other_plate.get())) {
+                plate->setPosition(oldPos);
+                plate->setRotation(oldRot);
+                return;
+            }
+        }
+    }
 }
 
 void Game::spawnEnemy(glm::vec3 position, glm::vec3 rotation) {
@@ -401,8 +412,26 @@ void Game::setupBenchmarkScene() {
 
 void Game::updateCamera() {
     cam.orbitAround(player->get_pos());
-    if (CONTROLS_MODE == THIRD_PERSON)
+    if (CONTROLS_MODE == THIRD_PERSON) {
         player->setRotation(0.f, 0.f, cam.getYaw());
+        // check for collision with plates and move player by the smallest
+        // amount in the x and y needed to avoid collision
+        for (const auto &plate : plates) {
+            while (player->check_3D_collision(plate.get())) {
+                glm::vec3 player_pos = player->get_pos();
+                glm::vec3 plate_pos = plate->get_pos();
+                glm::vec3 dir = player_pos - plate_pos;
+                dir.z = 0.f; // only move in x and y
+                if (glm::length2(dir) <
+                    0.01f) { // if player is exactly on top of
+                             // plate, wait for movement input
+                    break;
+                }
+                dir = glm::normalize(dir) * 0.05f; // move by a small amount
+                player->setPosition(player_pos + dir);
+            }
+        }
+    }
     shaders.gameShader->use();
     shader_utils::set_blinn_phong_view_pos(*shaders.gameShader,
                                            cam.getPosition());
