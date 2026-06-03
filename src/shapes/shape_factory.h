@@ -3,6 +3,7 @@
 
 #include <map>
 #include <memory>
+#include <cmath>
 #include <vector>
 
 #include <glm/glm.hpp>
@@ -79,6 +80,75 @@ class ShapeFactory {
         _meshCache[name] = m;
     }
 
+    void _loadWireCylinderMesh(const std::string &name, int segments = 24) {
+        if (segments < 3)
+            segments = 3;
+
+        // Unit cylinder centered at origin.
+        // Radius = 0.5 in X/Y, height = 1.0 along Z (-0.5..0.5).
+        // Vertex layout: position + normal (to satisfy default shader inputs).
+        std::vector<float> vertices;
+        vertices.reserve(static_cast<size_t>(segments) * 2 * 6);
+
+        std::vector<unsigned int> indices;
+        indices.reserve(static_cast<size_t>(segments) * 6);
+
+        const float pi = 3.14159265358979323846f;
+
+        for (int i = 0; i < segments; ++i) {
+            const float a =
+                2.0f * pi *
+                (static_cast<float>(i) / static_cast<float>(segments));
+            const float x = 0.5f * std::cos(a);
+            const float y = 0.5f * std::sin(a);
+
+            // bottom vertex
+            vertices.push_back(x);
+            vertices.push_back(y);
+            vertices.push_back(-0.5f);
+            vertices.push_back(0.0f);
+            vertices.push_back(0.0f);
+            vertices.push_back(1.0f);
+
+            // top vertex
+            vertices.push_back(x);
+            vertices.push_back(y);
+            vertices.push_back(0.5f);
+            vertices.push_back(0.0f);
+            vertices.push_back(0.0f);
+            vertices.push_back(1.0f);
+        }
+
+        for (int i = 0; i < segments; ++i) {
+            const int next = (i + 1) % segments;
+            const unsigned int bi = static_cast<unsigned int>(2 * i);
+            const unsigned int ti = static_cast<unsigned int>(2 * i + 1);
+            const unsigned int bnext = static_cast<unsigned int>(2 * next);
+            const unsigned int tnext = static_cast<unsigned int>(2 * next + 1);
+
+            // bottom loop
+            indices.push_back(bi);
+            indices.push_back(bnext);
+
+            // top loop
+            indices.push_back(ti);
+            indices.push_back(tnext);
+
+            // vertical edge
+            indices.push_back(bi);
+            indices.push_back(ti);
+        }
+
+        auto m = std::make_shared<Mesh>(vertices, indices,
+                                        /*hasNormals=*/true,
+                                        /*hasColors=*/false,
+                                        /*hasTexcoords=*/false, -0.5f, 0.5f,
+                                        -0.5f, 0.5f, -0.5f, 0.5f,
+                                        /*hasRoughness=*/false);
+
+        _meshCache[name] = m;
+    }
+
   public:
     ShapeFactory() {
         _loadCubeMesh();
@@ -99,6 +169,11 @@ class ShapeFactory {
 
     void registerWireCube(const std::string &name = "hitbox_cube") {
         _loadWireCubeMesh(name);
+        _transformCache[name] = Transform();
+    }
+
+    void registerWireCylinder(const std::string &name = "hitbox_cylinder") {
+        _loadWireCylinderMesh(name);
         _transformCache[name] = Transform();
     }
 

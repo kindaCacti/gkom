@@ -122,6 +122,15 @@ void Game::loadAssets() {
         hitboxShape->setSpecular(0.0f);
     }
 
+    shapeFactory.registerWireCylinder();
+    hitboxCylinderShape = shapeFactory.createShape("hitbox_cylinder",
+                                                   glm::vec3(0.0f, 1.0f, 0.0f));
+    if (hitboxCylinderShape) {
+        hitboxCylinderShape->setRoughness(1.0f);
+        hitboxCylinderShape->setMetallic(0.0f);
+        hitboxCylinderShape->setSpecular(0.0f);
+    }
+
     shapeFactory.registerWireCube("spawning_area_cube");
     spawningAreaShape = shapeFactory.createShape("spawning_area_cube",
                                                  glm::vec3(1.0f, 0.0f, 0.0f));
@@ -146,6 +155,7 @@ void Game::spawnPlayer() {
     }
     player_asset->setRoughness(0.3f);
     player = std::make_shared<Player>(Player(std::move(player_asset)));
+    player->setHitboxShape(Hitbox::Shape::Cylinder);
 }
 
 void Game::resetPlayer() {
@@ -186,6 +196,9 @@ void Game::spawnPlates() {
         auto plate = std::make_shared<Plate>(std::move(plate_asset));
         plate->setPosition(glm::vec3(5.f, 5.f, 0.2f));
         plates.push_back(plate);
+    }
+    for (const auto &plate : plates) {
+        plate->setHitboxShape(Hitbox::Shape::Cylinder);
     }
 }
 
@@ -462,14 +475,16 @@ void Game::checkPlateCollision() {
 
 void Game::drawEntities() {
     shaders.gameShader->use();
-    if (hitboxShape && settings.showHitboxes) {
-        player->drawHitbox(*shaders.gameShader, *hitboxShape);
+    if (hitboxShape && hitboxCylinderShape && settings.showHitboxes) {
+        player->drawHitbox(*shaders.gameShader, *hitboxShape,
+                           *hitboxCylinderShape);
     }
     player->draw(*shaders.gameShader);
     for (auto &plate : plates) {
         plate->draw(*shaders.gameShader);
-        if (hitboxShape && settings.showHitboxes) {
-            plate->drawHitbox(*shaders.gameShader, *hitboxShape);
+        if (hitboxShape && hitboxCylinderShape && settings.showHitboxes) {
+            plate->drawHitbox(*shaders.gameShader, *hitboxShape,
+                              *hitboxCylinderShape);
         }
     }
     for (auto &enemy : enemies) {

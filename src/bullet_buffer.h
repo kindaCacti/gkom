@@ -90,7 +90,8 @@ class BulletBuffer {
         std::vector<int> collisions;
         for (size_t i = 0; i < _activeCount; i++) {
             // Cheap bb reject before expensive intersection calculation.
-            const glm::vec3 d = _elements[i]->get_pos() - target->get_pos();
+            const glm::vec3 d =
+                _elements[i]->hitboxCenterWorld() - target->hitboxCenterWorld();
             const float d2 = d.x * d.x + d.y * d.y + d.z * d.z;
             if (d2 > md2) // No collision possible
                 continue;

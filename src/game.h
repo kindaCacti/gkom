@@ -140,6 +140,7 @@ struct Game {
     std::list<std::shared_ptr<Enemy>> enemies;
     std::vector<std::shared_ptr<Shape>> shapes;
     std::unique_ptr<Shape> hitboxShape;
+    std::unique_ptr<Shape> hitboxCylinderShape;
     std::unique_ptr<Shape> spawningAreaShape;
     BulletBuffer bulletBuffer;
     ShapeFactory shapeFactory;

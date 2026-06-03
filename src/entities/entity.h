@@ -6,6 +6,7 @@
 #include "../shaders/shader_s.h"
 #include "../utils.h"
 #include "../shapes/shape.h"
+#include "../hitbox.h"
 
 class Entity {
   protected:
@@ -115,19 +116,35 @@ class DrawableEntity : public virtual Entity {
 
 class HitboxedDrawableEntity : public virtual DrawableEntity {
   protected:
-    glm::vec3 _hitbox_size;
-    glm::vec3 _hitbox_center_offset;
+    Hitbox _hitbox;
+
+    glm::vec3 cylinderAxisWorld() const {
+        const glm::mat4 R = getEulerRotationMatrix(_rot);
+        glm::vec3 axis = glm::vec3(R * glm::vec4(0.0f, 0.0f, 1.0f, 0.0f));
+        const float len2 = glm::dot(axis, axis);
+        if (len2 < 1e-8f)
+            return glm::vec3(0.0f, 0.0f, 1.0f);
+        return axis / std::sqrt(len2);
+    }
+
+    float cylinderHalfExtentAlongWorldAxis(int axisIndex) const {
+        const glm::vec3 axis = cylinderAxisWorld();
+        const float a = std::abs(axis[axisIndex]);
+        const float h = _hitbox.cylinderHalfHeight();
+        const float r = _hitbox.cylinderRadius();
+        // Projection of a radius circle onto an axis perpendicular component.
+        const float radial = r * std::sqrt(std::max(0.0f, 1.0f - a * a));
+        return a * h + radial;
+    }
 
     void updateHitboxFromShape() {
         if (!_shape) {
-            _hitbox_size = glm::vec3(0.0f);
-            _hitbox_center_offset = glm::vec3(0.0f);
+            _hitbox.setFromBounds(glm::vec3(0.0f), glm::vec3(0.0f));
             return;
         }
         const glm::vec3 minB(_shape->minX(), _shape->minY(), _shape->minZ());
         const glm::vec3 maxB(_shape->maxX(), _shape->maxY(), _shape->maxZ());
-        _hitbox_center_offset = (minB + maxB) * 0.5f;
-        _hitbox_size = (maxB - minB) * 0.5f;
+        _hitbox.setFromBounds(minB, maxB);
     }
 
     void attachShapeBoundsCallback() {
@@ -139,15 +156,13 @@ class HitboxedDrawableEntity : public virtual DrawableEntity {
 
   public:
     HitboxedDrawableEntity(std::unique_ptr<Shape> &&shape,
-                           glm::vec3 hitbox_size)
-        : DrawableEntity(std::move(shape)), _hitbox_size(hitbox_size),
-          _hitbox_center_offset(0.0f) {
+                           glm::vec3 /*hitbox_size*/)
+        : DrawableEntity(std::move(shape)) {
         attachShapeBoundsCallback();
         updateHitboxFromShape();
     }
     HitboxedDrawableEntity(std::unique_ptr<Shape> &&shape)
-        : DrawableEntity(std::move(shape)), _hitbox_size(0.0f),
-          _hitbox_center_offset(0.0f) {
+        : DrawableEntity(std::move(shape)) {
         attachShapeBoundsCallback();
         updateHitboxFromShape();
     }
@@ -161,8 +176,7 @@ class HitboxedDrawableEntity : public virtual DrawableEntity {
 
     HitboxedDrawableEntity &operator=(HitboxedDrawableEntity &&other) noexcept {
         if (this != &other) {
-            _hitbox_size = std::move(other._hitbox_size);
-            _hitbox_center_offset = std::move(other._hitbox_center_offset);
+            _hitbox = std::move(other._hitbox);
         }
         return *this;
     }
@@ -172,178 +186,104 @@ class HitboxedDrawableEntity : public virtual DrawableEntity {
     // Fast broad-phase radius (no sqrt).
     // Conservative: the farthest corner distance is <= sqrt(3)*maxHalfExtent.
     float containingSphereRadius() const {
-        const float maxHalfExtent =
-            std::max({_hitbox_size.x, _hitbox_size.y, _hitbox_size.z});
-        // sqrt(3) ≈ 1.7320508
-        return 1.7320508f * maxHalfExtent;
+        return _hitbox.containingSphereRadius();
+    }
+
+    glm::vec3 hitboxCenterWorld() const {
+        if (_hitbox.shape() == Hitbox::Shape::Cylinder) {
+            return glm::vec3(getCylinderHitboxTransformMatrix()[3]);
+        }
+        return glm::vec3(getHitboxTransformMatrix()[3]);
     }
 
     float bottom_x() {
-        return (_pos.x + _hitbox_center_offset.x) - _hitbox_size.x;
+        const glm::mat4 R = getEulerRotationMatrix(_rot);
+        const glm::vec3 centerOffsetWorld =
+            glm::vec3(R * glm::vec4(_hitbox.centerOffset(), 0.0f));
+        const glm::vec3 c = _pos + centerOffsetWorld;
+        if (_hitbox.shape() == Hitbox::Shape::Cylinder)
+            return c.x - cylinderHalfExtentAlongWorldAxis(0);
+        return c.x - _hitbox.boxHalfExtents().x;
     }
     float bottom_y() {
-        return (_pos.y + _hitbox_center_offset.y) - _hitbox_size.y;
+        const glm::mat4 R = getEulerRotationMatrix(_rot);
+        const glm::vec3 centerOffsetWorld =
+            glm::vec3(R * glm::vec4(_hitbox.centerOffset(), 0.0f));
+        const glm::vec3 c = _pos + centerOffsetWorld;
+        if (_hitbox.shape() == Hitbox::Shape::Cylinder)
+            return c.y - cylinderHalfExtentAlongWorldAxis(1);
+        return c.y - _hitbox.boxHalfExtents().y;
     }
     float bottom_z() {
-        return (_pos.z + _hitbox_center_offset.z) - _hitbox_size.z;
+        const glm::mat4 R = getEulerRotationMatrix(_rot);
+        const glm::vec3 centerOffsetWorld =
+            glm::vec3(R * glm::vec4(_hitbox.centerOffset(), 0.0f));
+        const glm::vec3 c = _pos + centerOffsetWorld;
+        if (_hitbox.shape() == Hitbox::Shape::Cylinder)
+            return c.z - cylinderHalfExtentAlongWorldAxis(2);
+        return c.z - _hitbox.boxHalfExtents().z;
     }
     float top_x() {
-        return (_pos.x + _hitbox_center_offset.x) + _hitbox_size.x;
+        const glm::mat4 R = getEulerRotationMatrix(_rot);
+        const glm::vec3 centerOffsetWorld =
+            glm::vec3(R * glm::vec4(_hitbox.centerOffset(), 0.0f));
+        const glm::vec3 c = _pos + centerOffsetWorld;
+        if (_hitbox.shape() == Hitbox::Shape::Cylinder)
+            return c.x + cylinderHalfExtentAlongWorldAxis(0);
+        return c.x + _hitbox.boxHalfExtents().x;
     }
     float top_y() {
-        return (_pos.y + _hitbox_center_offset.y) + _hitbox_size.y;
+        const glm::mat4 R = getEulerRotationMatrix(_rot);
+        const glm::vec3 centerOffsetWorld =
+            glm::vec3(R * glm::vec4(_hitbox.centerOffset(), 0.0f));
+        const glm::vec3 c = _pos + centerOffsetWorld;
+        if (_hitbox.shape() == Hitbox::Shape::Cylinder)
+            return c.y + cylinderHalfExtentAlongWorldAxis(1);
+        return c.y + _hitbox.boxHalfExtents().y;
     }
     float top_z() {
-        return (_pos.z + _hitbox_center_offset.z) + _hitbox_size.z;
+        const glm::mat4 R = getEulerRotationMatrix(_rot);
+        const glm::vec3 centerOffsetWorld =
+            glm::vec3(R * glm::vec4(_hitbox.centerOffset(), 0.0f));
+        const glm::vec3 c = _pos + centerOffsetWorld;
+        if (_hitbox.shape() == Hitbox::Shape::Cylinder)
+            return c.z + cylinderHalfExtentAlongWorldAxis(2);
+        return c.z + _hitbox.boxHalfExtents().z;
     }
 
     bool check_3D_collision(HitboxedDrawableEntity *other) {
-        auto matA = getHitboxTransformMatrix();
-        auto matB = other->getHitboxTransformMatrix();
-
-        glm::vec3 posA = glm::vec3(matA[3]);
-        glm::vec3 posB = glm::vec3(matB[3]);
-        glm::vec3 Delta = posB - posA;
-
-        // Use pure rotation axes (Normalized)
-        glm::vec3 A[3] = {glm::normalize(glm::vec3(matA[0])),
-                          glm::normalize(glm::vec3(matA[1])),
-                          glm::normalize(glm::vec3(matA[2]))};
-        glm::vec3 B[3] = {glm::normalize(glm::vec3(matB[0])),
-                          glm::normalize(glm::vec3(matB[1])),
-                          glm::normalize(glm::vec3(matB[2]))};
-
-        // Half-extents:
-        // Since your matrix uses (_hitbox_size * 2.0f),
-        // the length of the matrix columns is double the half-extent.
-        float eA[3] = {glm::length(glm::vec3(matA[0])) * 0.5f,
-                       glm::length(glm::vec3(matA[1])) * 0.5f,
-                       glm::length(glm::vec3(matA[2])) * 0.5f};
-        float eB[3] = {glm::length(glm::vec3(matB[0])) * 0.5f,
-                       glm::length(glm::vec3(matB[1])) * 0.5f,
-                       glm::length(glm::vec3(matB[2])) * 0.5f};
-
-        // Rotation matrix between A and B
-        float R[3][3], AbsR[3][3];
-        for (int i = 0; i < 3; i++) {
-            for (int j = 0; j < 3; j++) {
-                R[i][j] = glm::dot(A[i], B[j]);
-                AbsR[i][j] = glm::abs(R[i][j]) + 1e-9f;
-            }
-        }
-
-        float ra, rb;
-
-        // 1-3: Axes A
-        for (int i = 0; i < 3; i++) {
-            ra = eA[i];
-            rb = eB[0] * AbsR[i][0] + eB[1] * AbsR[i][1] + eB[2] * AbsR[i][2];
-            if (glm::abs(glm::dot(Delta, A[i])) > ra + rb)
-                return false;
-        }
-
-        // 4-6: Axes B
-        for (int i = 0; i < 3; i++) {
-            ra = eA[0] * AbsR[0][i] + eA[1] * AbsR[1][i] + eA[2] * AbsR[2][i];
-            rb = eB[i];
-            if (glm::abs(glm::dot(Delta, B[i])) > ra + rb)
-                return false;
-        }
-
-        // 7-15: Cross Products
-        // A0 x B0
-        ra = eA[1] * AbsR[2][0] + eA[2] * AbsR[1][0];
-        rb = eB[1] * AbsR[0][2] + eB[2] * AbsR[0][1];
-        if (glm::abs(glm::dot(Delta, A[2]) * R[1][0] -
-                     glm::dot(Delta, A[1]) * R[2][0]) > ra + rb)
-            return false;
-
-        // A0 x B1
-        ra = eA[1] * AbsR[2][1] + eA[2] * AbsR[1][1];
-        rb = eB[0] * AbsR[0][2] + eB[2] * AbsR[0][0];
-        if (glm::abs(glm::dot(Delta, A[2]) * R[1][1] -
-                     glm::dot(Delta, A[1]) * R[2][1]) > ra + rb)
-            return false;
-
-        // A0 x B2
-        ra = eA[1] * AbsR[2][2] + eA[2] * AbsR[1][2];
-        rb = eB[0] * AbsR[0][1] + eB[1] * AbsR[0][0];
-        if (glm::abs(glm::dot(Delta, A[2]) * R[1][2] -
-                     glm::dot(Delta, A[1]) * R[2][2]) > ra + rb)
-            return false;
-
-        // A1 x B0
-        ra = eA[0] * AbsR[2][0] + eA[2] * AbsR[0][0];
-        rb = eB[1] * AbsR[1][2] + eB[2] * AbsR[1][1];
-        if (glm::abs(glm::dot(Delta, A[0]) * R[2][0] -
-                     glm::dot(Delta, A[2]) * R[0][0]) > ra + rb)
-            return false;
-
-        // A1 x B1
-        ra = eA[0] * AbsR[2][1] + eA[2] * AbsR[0][1];
-        rb = eB[0] * AbsR[1][2] + eB[2] * AbsR[1][0];
-        if (glm::abs(glm::dot(Delta, A[0]) * R[2][1] -
-                     glm::dot(Delta, A[2]) * R[0][1]) > ra + rb)
-            return false;
-
-        // A1 x B2
-        ra = eA[0] * AbsR[2][2] + eA[2] * AbsR[0][2];
-        rb = eB[0] * AbsR[1][1] + eB[1] * AbsR[1][0];
-        if (glm::abs(glm::dot(Delta, A[0]) * R[2][2] -
-                     glm::dot(Delta, A[2]) * R[0][2]) > ra + rb)
-            return false;
-
-        // A2 x B0
-        ra = eA[0] * AbsR[1][0] + eA[1] * AbsR[0][0];
-        rb = eB[1] * AbsR[2][2] + eB[2] * AbsR[2][1];
-        if (glm::abs(glm::dot(Delta, A[1]) * R[0][0] -
-                     glm::dot(Delta, A[0]) * R[1][0]) > ra + rb)
-            return false;
-
-        // A2 x B1
-        ra = eA[0] * AbsR[1][1] + eA[1] * AbsR[0][1];
-        rb = eB[0] * AbsR[2][2] + eB[2] * AbsR[2][0];
-        if (glm::abs(glm::dot(Delta, A[1]) * R[0][1] -
-                     glm::dot(Delta, A[0]) * R[1][1]) > ra + rb)
-            return false;
-
-        // A2 x B2
-        ra = eA[0] * AbsR[1][2] + eA[1] * AbsR[0][2];
-        rb = eB[0] * AbsR[2][1] + eB[1] * AbsR[2][0];
-        if (glm::abs(glm::dot(Delta, A[1]) * R[0][2] -
-                     glm::dot(Delta, A[0]) * R[1][2]) > ra + rb)
-            return false;
-
-        return true;
-    }
-
-    bool x_intersects(HitboxedDrawableEntity *other) {
-        return bottom_x() < other->top_x() and top_x() > other->bottom_x();
-    }
-
-    bool y_intersects(HitboxedDrawableEntity *other) {
-        return bottom_y() < other->top_y() and top_y() > other->bottom_y();
-    }
-
-    bool z_intersects(HitboxedDrawableEntity *other) {
-        return bottom_z() < other->top_z() and top_z() > other->bottom_z();
+        return intersects(other);
     }
 
     bool intersects(HitboxedDrawableEntity *other) {
-        return check_3D_collision(other);
+        return _hitbox.intersects(other->_hitbox, _pos, _rot, other->_pos,
+                                  other->_rot);
     }
 
     glm::mat4 getHitboxTransformMatrix() const {
-        glm::mat4 T = glm::translate(glm::mat4(1.0f), _pos);
-        glm::mat4 R = getEulerRotationMatrix(_rot);
-        glm::mat4 C = glm::translate(glm::mat4(1.0f), _hitbox_center_offset);
-        glm::mat4 S = glm::scale(glm::mat4(1.0f), _hitbox_size * 2.0f);
-        return T * R * C * S;
+        return _hitbox.boxTransformMatrix(_pos, _rot);
+    }
+
+    glm::mat4 getCylinderHitboxTransformMatrix() const {
+        return _hitbox.cylinderTransformMatrix(_pos, _rot);
+    }
+
+    virtual void drawHitbox(Shader &shader, const Shape &boxHitboxShape,
+                            const Shape &cylinderHitboxShape) const {
+        if (_hitbox.shape() == Hitbox::Shape::Cylinder) {
+            cylinderHitboxShape.draw(shader, getCylinderHitboxTransformMatrix(),
+                                     GL_LINES);
+        } else {
+            boxHitboxShape.draw(shader, getHitboxTransformMatrix(), GL_LINES);
+        }
     }
 
     virtual void drawHitbox(Shader &shader, const Shape &hitboxShape) {
-        hitboxShape.draw(shader, getHitboxTransformMatrix(), GL_LINES);
+        drawHitbox(shader, hitboxShape, hitboxShape);
     }
+
+    void setHitboxShape(Hitbox::Shape shape) { _hitbox.setShape(shape); }
+    Hitbox::Shape hitboxShape() const { return _hitbox.shape(); }
 };
 
 #endif
