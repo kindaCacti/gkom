@@ -12,31 +12,33 @@
 #include "../shapes/shape_factory.h"
 #include "entity.h"
 
-
 void Bullet::rotateTowardsTarget(float delta_time, glm::vec3 target) {
     // float angle = atan2(target.z - _pos.z, target.x - _pos.x);
     // float current_angle = atan2(_direction.z, _direction.x);
     // float angle_diff = angle - current_angle;
 
     // // Normalize the angle difference to the range [-pi, pi]
-    // while (angle_diff > glm::pi<float>()) angle_diff -= 2.0f * glm::pi<float>();
-    // while (angle_diff < -glm::pi<float>()) angle_diff += 2.0f * glm::pi<float>();
+    // while (angle_diff > glm::pi<float>()) angle_diff -= 2.0f *
+    // glm::pi<float>(); while (angle_diff < -glm::pi<float>()) angle_diff
+    // += 2.0f * glm::pi<float>();
 
     // float max_angle_change = MAX_ANGLE_CHANGE_PER_SECOND * delta_time;
-    // float angle_change = std::max(-max_angle_change, std::min(max_angle_change, angle_diff));
-    // float new_angle = current_angle + angle_change;
-    // _direction.x = glm::degrees(cos(new_angle));
-    // _direction.z = glm::degrees(sin(new_angle));
+    // float angle_change = std::max(-max_angle_change,
+    // std::min(max_angle_change, angle_diff)); float new_angle = current_angle
+    // + angle_change; _direction.x = glm::degrees(cos(new_angle)); _direction.z
+    // = glm::degrees(sin(new_angle));
 }
 
 void Bullet::step(float delta_time, glm::vec3 target) {
     rotateTowardsTarget(delta_time, target);
+    // Keep visual + hitbox rotation aligned with movement direction.
+    setRotation(_direction.x, _direction.y, _direction.z);
     // Apply rotation as M * v (column-vector convention) so the direction
     // matches every other transform in the project. Using v * M here secretly
     // applies the transpose (= inverse, for rotations) and was previously
     // cancelling out a sign-flip in spawnRandomemiter.
-    glm::vec3 direction =
-        glm::vec3(getEulerRotationMatrix(_direction) * glm::vec4(1.0f, 0.0f, 0.0f, 0.0f));
+    glm::vec3 direction = glm::vec3(getEulerRotationMatrix(_direction) *
+                                    glm::vec4(1.0f, 0.0f, 0.0f, 0.0f));
     direction = glm::normalize(direction);
     _pos.x += delta_time * _speed * direction.x;
     _pos.y += delta_time * _speed * direction.y;

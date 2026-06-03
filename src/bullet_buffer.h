@@ -77,6 +77,14 @@ class BulletBuffer {
         }
     }
 
+    void drawActiveHitboxes(Shader &shader, const Shape &boxHitboxShape,
+                            const Shape &cylinderHitboxShape) {
+        for (size_t i = 0; i < _activeCount; i++) {
+            _elements[i]->drawHitbox(shader, boxHitboxShape,
+                                     cylinderHitboxShape);
+        }
+    }
+
     std::vector<int>
     checkActiveBulletCollision(HitboxedDrawableEntity *target) {
         if (_activeCount == 0)

@@ -120,10 +120,11 @@ class HitboxedDrawableEntity : public virtual DrawableEntity {
 
     glm::vec3 cylinderAxisWorld() const {
         const glm::mat4 R = getEulerRotationMatrix(_rot);
-        glm::vec3 axis = glm::vec3(R * glm::vec4(0.0f, 0.0f, 1.0f, 0.0f));
+        const glm::vec3 localAxis = _hitbox.cylinderLocalAxis();
+        glm::vec3 axis = glm::vec3(R * glm::vec4(localAxis, 0.0f));
         const float len2 = glm::dot(axis, axis);
         if (len2 < 1e-8f)
-            return glm::vec3(0.0f, 0.0f, 1.0f);
+            return localAxis;
         return axis / std::sqrt(len2);
     }
 
@@ -311,6 +312,11 @@ class HitboxedDrawableEntity : public virtual DrawableEntity {
 
     void setHitboxShape(Hitbox::Shape shape) { _hitbox.setShape(shape); }
     Hitbox::Shape hitboxShape() const { return _hitbox.shape(); }
+
+    void setCylinderAxis(Hitbox::CylinderAxis axis) {
+        _hitbox.setCylinderAxis(axis);
+    }
+    Hitbox::CylinderAxis cylinderAxis() const { return _hitbox.cylinderAxis(); }
 };
 
 #endif

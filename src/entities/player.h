@@ -18,7 +18,9 @@ class Player : public HitboxedDrawableEntity {
 
     Player() = default;
     Player(std::unique_ptr<Shape> &&shape)
-        : DrawableEntity(std::move(shape)), HitboxedDrawableEntity(nullptr) {}
+        : DrawableEntity(std::move(shape)), HitboxedDrawableEntity(nullptr) {
+        setHitboxShape(Hitbox::Shape::Cylinder);
+    }
     // Player& operator=(Player&& player) = default;
 };
 

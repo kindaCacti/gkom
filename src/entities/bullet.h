@@ -20,7 +20,11 @@ class Bullet : public HitboxedDrawableEntity {
   public:
     Bullet(std::unique_ptr<Shape> &&shape, float speed, glm::vec3 &direction)
         : DrawableEntity(std::move(shape)), HitboxedDrawableEntity(nullptr),
-          _speed(speed), _direction(direction) {}
+          _speed(speed), _direction(direction) {
+        setHitboxShape(Hitbox::Shape::Cylinder);
+        setCylinderAxis(Hitbox::CylinderAxis::X);
+        setRotation(_direction.x, _direction.y, _direction.z);
+    }
     Bullet(const Bullet &) = default;
     Bullet(Bullet &&) = default;
     Bullet &operator=(Bullet &&bullet) = default;
@@ -32,6 +36,7 @@ class Bullet : public HitboxedDrawableEntity {
     void setSpeed(float speed) { _speed = speed; }
     void setDirection(glm::vec3 direction) {
         _direction = std::move(direction);
+        setRotation(_direction.x, _direction.y, _direction.z);
     }
 };
 

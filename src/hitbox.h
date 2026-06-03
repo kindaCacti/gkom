@@ -18,8 +18,15 @@ class Hitbox {
         Cylinder,
     };
 
+    enum class CylinderAxis {
+        X,
+        Y,
+        Z,
+    };
+
   private:
     Shape _shape = Shape::Box;
+    CylinderAxis _cylAxis = CylinderAxis::Z;
 
     // Shared
     glm::vec3 _centerOffset = glm::vec3(0.0f);
@@ -27,7 +34,7 @@ class Hitbox {
     // Box (half extents in local space)
     glm::vec3 _boxHalfExtents = glm::vec3(0.0f);
 
-    // Cylinder (local Z axis, oriented by entity rotation)
+    // Cylinder
     float _cylRadius = 0.0f;
     float _cylHalfHeight = 0.0f;
 
@@ -107,6 +114,7 @@ class Hitbox {
         return true;
     }
 
+    // Exact squared distance between a segment and an AABB.
     static float segmentAABBDistanceSquared(const glm::vec3 &p0,
                                             const glm::vec3 &p1,
                                             const glm::vec3 &bmin,
@@ -117,7 +125,7 @@ class Hitbox {
         const glm::vec3 d = p1 - p0;
         const float eps = 1e-8f;
 
-        // Collect clamp-state change events in t-space.
+        // Gather clamp-state change events for each axis.
         std::array<float, 8> ts;
         int n = 0;
         auto addT = [&](float t) {
@@ -133,18 +141,15 @@ class Hitbox {
             const float di = d[i];
             if (std::abs(di) < eps)
                 continue;
-            const float t1 = (bmin[i] - p0[i]) / di;
-            const float t2 = (bmax[i] - p0[i]) / di;
-            addT(t1);
-            addT(t2);
+            addT((bmin[i] - p0[i]) / di);
+            addT((bmax[i] - p0[i]) / di);
         }
 
         std::sort(ts.begin(), ts.begin() + n);
         int m = 0;
         for (int i = 0; i < n; ++i) {
-            if (m == 0 || std::abs(ts[i] - ts[m - 1]) > 1e-6f) {
+            if (m == 0 || std::abs(ts[i] - ts[m - 1]) > 1e-6f)
                 ts[m++] = ts[i];
-            }
         }
 
         auto eval = [&](float t) {
@@ -163,10 +168,10 @@ class Hitbox {
 
             const float tm = 0.5f * (t0 + t1);
 
-            // Determine clamp status per axis in this interval using midpoint.
             float a = 0.0f;
             float b = 0.0f;
             float c = 0.0f;
+
             for (int k = 0; k < 3; ++k) {
                 const float pm = p0[k] + d[k] * tm;
                 if (pm < bmin[k]) {
@@ -189,11 +194,9 @@ class Hitbox {
 
             if (a > eps) {
                 const float tStar = -b / (2.0f * a);
-                if (tStar > t0 && tStar < t1) {
+                if (tStar > t0 && tStar < t1)
                     best = std::min(best, eval(tStar));
-                }
             } else {
-                // Constant distance over this interval (all axes inside).
                 best = std::min(best, c);
             }
         }
@@ -292,8 +295,6 @@ class Hitbox {
                                           const glm::vec3 &testAxisUnit) {
         const float du = glm::dot(axisUnit, testAxisUnit);
         const float axial = halfHeight * std::abs(du);
-        // radial component is scaled by how perpendicular the test axis is
-        // to the cylinder axis.
         const float perp2 = std::max(0.0f, 1.0f - du * du);
         const float radial = radius * std::sqrt(perp2);
         return axial + radial;
@@ -312,13 +313,64 @@ class Hitbox {
         return dist > (ra + rb);
     }
 
-    inline Capsule capsuleFromCylinder(const glm::vec3 &pos,
-                                       const glm::vec3 &rot) const {
+    glm::vec3 cylinderLocalAxisVec() const {
+        switch (_cylAxis) {
+        case CylinderAxis::X:
+            return glm::vec3(1.0f, 0.0f, 0.0f);
+        case CylinderAxis::Y:
+            return glm::vec3(0.0f, 1.0f, 0.0f);
+        case CylinderAxis::Z:
+        default:
+            return glm::vec3(0.0f, 0.0f, 1.0f);
+        }
+    }
+
+    glm::mat4 cylinderAxisRotationMat() const {
+        // Wire cylinder mesh is built along +Z.
+        switch (_cylAxis) {
+        case CylinderAxis::X:
+            // RotY(+90): Z -> X
+            return glm::rotate(glm::mat4(1.0f), glm::radians(90.0f),
+                               glm::vec3(0.0f, 1.0f, 0.0f));
+        case CylinderAxis::Y:
+            // RotX(-90): Z -> Y
+            return glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f),
+                               glm::vec3(1.0f, 0.0f, 0.0f));
+        case CylinderAxis::Z:
+        default:
+            return glm::mat4(1.0f);
+        }
+    }
+
+    void updateCylinderFromBoxExtents() {
+        switch (_cylAxis) {
+        case CylinderAxis::X:
+            _cylHalfHeight = std::max(0.0f, _boxHalfExtents.x);
+            _cylRadius =
+                std::max(0.0f, std::max(_boxHalfExtents.y, _boxHalfExtents.z));
+            break;
+        case CylinderAxis::Y:
+            _cylHalfHeight = std::max(0.0f, _boxHalfExtents.y);
+            _cylRadius =
+                std::max(0.0f, std::max(_boxHalfExtents.x, _boxHalfExtents.z));
+            break;
+        case CylinderAxis::Z:
+        default:
+            _cylHalfHeight = std::max(0.0f, _boxHalfExtents.z);
+            _cylRadius =
+                std::max(0.0f, std::max(_boxHalfExtents.x, _boxHalfExtents.y));
+            break;
+        }
+    }
+
+    Capsule capsuleFromCylinder(const glm::vec3 &pos,
+                                const glm::vec3 &rot) const {
         const glm::mat4 R = getEulerRotationMatrix(rot);
-        glm::vec3 axis = glm::vec3(R * glm::vec4(0.0f, 0.0f, 1.0f, 0.0f));
+        const glm::vec3 localAxis = cylinderLocalAxisVec();
+        glm::vec3 axis = glm::vec3(R * glm::vec4(localAxis, 0.0f));
         const float len2 = glm::dot(axis, axis);
         if (len2 < 1e-8f)
-            axis = glm::vec3(0.0f, 0.0f, 1.0f);
+            axis = localAxis;
         else
             axis /= std::sqrt(len2);
 
@@ -330,8 +382,7 @@ class Hitbox {
         return Capsule{a, b, _cylRadius};
     }
 
-    inline bool obbIntersectsOBB(const glm::mat4 &matA,
-                                 const glm::mat4 &matB) const {
+    bool obbIntersectsOBB(const glm::mat4 &matA, const glm::mat4 &matB) const {
         glm::vec3 posA = glm::vec3(matA[3]);
         glm::vec3 posB = glm::vec3(matB[3]);
         glm::vec3 Delta = posB - posA;
@@ -438,6 +489,13 @@ class Hitbox {
     void setShape(Shape shape) { _shape = shape; }
     Shape shape() const { return _shape; }
 
+    void setCylinderAxis(CylinderAxis axis) {
+        _cylAxis = axis;
+        updateCylinderFromBoxExtents();
+    }
+    CylinderAxis cylinderAxis() const { return _cylAxis; }
+    glm::vec3 cylinderLocalAxis() const { return cylinderLocalAxisVec(); }
+
     const glm::vec3 &centerOffset() const { return _centerOffset; }
     const glm::vec3 &boxHalfExtents() const { return _boxHalfExtents; }
     float cylinderRadius() const { return _cylRadius; }
@@ -446,17 +504,10 @@ class Hitbox {
     void setFromBounds(const glm::vec3 &minB, const glm::vec3 &maxB) {
         _centerOffset = (minB + maxB) * 0.5f;
         _boxHalfExtents = (maxB - minB) * 0.5f;
-
-        // Requested formula:
-        // vertical cylinder, radius = max(maxX, maxY), height = maxZ - minZ
-        const float radius = std::max(maxB.x, maxB.y);
-        _cylRadius = std::max(0.0f, radius);
-
-        const float height = maxB.z - minB.z;
-        _cylHalfHeight = 0.5f * std::max(0.0f, height);
+        updateCylinderFromBoxExtents();
     }
 
-    inline float containingSphereRadius() const {
+    float containingSphereRadius() const {
         if (_shape == Shape::Cylinder) {
             const float r = _cylRadius;
             const float h = _cylHalfHeight;
@@ -467,8 +518,8 @@ class Hitbox {
         return 1.7320508f * maxHalfExtent;
     }
 
-    inline glm::mat4 boxTransformMatrix(const glm::vec3 &pos,
-                                        const glm::vec3 &rot) const {
+    glm::mat4 boxTransformMatrix(const glm::vec3 &pos,
+                                 const glm::vec3 &rot) const {
         glm::mat4 T = glm::translate(glm::mat4(1.0f), pos);
         glm::mat4 R = getEulerRotationMatrix(rot);
         glm::mat4 C = glm::translate(glm::mat4(1.0f), _centerOffset);
@@ -476,42 +527,44 @@ class Hitbox {
         return T * R * C * S;
     }
 
-    inline glm::mat4 cylinderTransformMatrix(const glm::vec3 &pos,
-                                             const glm::vec3 &rot) const {
+    glm::mat4 cylinderTransformMatrix(const glm::vec3 &pos,
+                                      const glm::vec3 &rot) const {
         glm::mat4 T = glm::translate(glm::mat4(1.0f), pos);
         glm::mat4 R = getEulerRotationMatrix(rot);
         glm::mat4 C = glm::translate(glm::mat4(1.0f), _centerOffset);
+        glm::mat4 A = cylinderAxisRotationMat();
         glm::mat4 S = glm::scale(glm::mat4(1.0f),
                                  glm::vec3(_cylRadius * 2.0f, _cylRadius * 2.0f,
                                            _cylHalfHeight * 2.0f));
-        return T * R * C * S;
+        return T * R * C * A * S;
     }
 
-    inline bool intersects(const Hitbox &other, const glm::vec3 &pos,
-                           const glm::vec3 &rot, const glm::vec3 &otherPos,
-                           const glm::vec3 &otherRot) const {
+    bool intersects(const Hitbox &other, const glm::vec3 &pos,
+                    const glm::vec3 &rot, const glm::vec3 &otherPos,
+                    const glm::vec3 &otherRot) const {
         if (_shape == Shape::Box && other._shape == Shape::Box) {
             return obbIntersectsOBB(
                 boxTransformMatrix(pos, rot),
                 other.boxTransformMatrix(otherPos, otherRot));
         }
 
-        // Cylinder-cylinder: oriented capped cylinder SAT (flat end-caps), with
-        // a cheap capsule rejection test up-front.
         if (_shape == Shape::Cylinder && other._shape == Shape::Cylinder) {
             const glm::mat4 RA = getEulerRotationMatrix(rot);
             const glm::mat4 RB = getEulerRotationMatrix(otherRot);
 
-            glm::vec3 uA = glm::vec3(RA * glm::vec4(0.0f, 0.0f, 1.0f, 0.0f));
-            glm::vec3 uB = glm::vec3(RB * glm::vec4(0.0f, 0.0f, 1.0f, 0.0f));
+            const glm::vec3 lA = cylinderLocalAxisVec();
+            const glm::vec3 lB = other.cylinderLocalAxisVec();
+
+            glm::vec3 uA = glm::vec3(RA * glm::vec4(lA, 0.0f));
+            glm::vec3 uB = glm::vec3(RB * glm::vec4(lB, 0.0f));
             const float uA2 = glm::dot(uA, uA);
             const float uB2 = glm::dot(uB, uB);
             if (uA2 < 1e-8f)
-                uA = glm::vec3(0.0f, 0.0f, 1.0f);
+                uA = lA;
             else
                 uA /= std::sqrt(uA2);
             if (uB2 < 1e-8f)
-                uB = glm::vec3(0.0f, 0.0f, 1.0f);
+                uB = lB;
             else
                 uB /= std::sqrt(uB2);
 
@@ -526,10 +579,6 @@ class Hitbox {
             const float hB = other._cylHalfHeight;
             const float rB = other._cylRadius;
 
-            // Fast early-out (safe rejection):
-            // Each capped cylinder is a subset of a capsule with the same axis
-            // segment and radius. If those capsules do NOT intersect, the
-            // cylinders cannot intersect.
             const glm::vec3 segA0 = cA - uA * hA;
             const glm::vec3 segA1 = cA + uA * hA;
             const glm::vec3 segB0 = cB - uB * hB;
@@ -537,16 +586,11 @@ class Hitbox {
             const float rsum = rA + rB;
             const float capD2 =
                 segmentSegmentDistanceSquared(segA0, segA1, segB0, segB1);
-            if (capD2 > rsum * rsum) {
+            if (capD2 > rsum * rsum)
                 return false;
-            }
 
-            // Parallel / nearly-parallel cylinders: exact test.
             glm::vec3 n = glm::cross(uA, uB);
             const float n2 = glm::dot(n, n);
-            // n2 = sin^2(angle). When pushing plates, axes are often almost
-            // parallel; treat that as parallel to avoid unstable
-            // normalizations.
             if (n2 < 1e-4f) {
                 const float dz = std::abs(glm::dot(delta, uA));
                 if (dz > (hA + hB))
@@ -559,11 +603,10 @@ class Hitbox {
 
             n /= std::sqrt(n2);
 
-            // Candidate separating axes.
             const glm::vec3 a1 = uA;
             const glm::vec3 a2 = uB;
             const glm::vec3 a3 = n;
-            // These can be near-zero if n is small; guard normalization.
+
             const glm::vec3 c4 = glm::cross(n, uA);
             const glm::vec3 c5 = glm::cross(n, uB);
             const float c42 = glm::dot(c4, c4);
@@ -585,7 +628,6 @@ class Hitbox {
         }
 
         // Mixed: approximate cylinder as a capsule for OBB distance test.
-        // This is conservative (may report collisions slightly early).
         const Hitbox *cyl = this;
         const Hitbox *box = &other;
         glm::vec3 cylPos = pos;
@@ -603,15 +645,12 @@ class Hitbox {
         }
 
         if (cyl->_shape != Shape::Cylinder || box->_shape != Shape::Box) {
-            // Shouldn't happen.
             return false;
         }
 
         const Capsule cap = cyl->capsuleFromCylinder(cylPos, cylRot);
-
         const glm::mat4 boxMat = box->boxTransformMatrix(boxPos, boxRot);
         const OBB obb = extractOBBFromMatrix(boxMat);
-
         return capsuleOBBDistanceSquared(cap, obb) <= 0.0f;
     }
 };

@@ -161,7 +161,6 @@ void Game::spawnPlayer() {
     }
     player_asset->setRoughness(0.3f);
     player = std::make_shared<Player>(Player(std::move(player_asset)));
-    player->setHitboxShape(Hitbox::Shape::Cylinder);
 }
 
 void Game::resetPlayer() {
@@ -202,9 +201,6 @@ void Game::spawnPlates() {
         auto plate = std::make_shared<Plate>(std::move(plate_asset));
         plate->setPosition(glm::vec3(5.f, 5.f, 0.2f));
         plates.push_back(plate);
-    }
-    for (const auto &plate : plates) {
-        plate->setHitboxShape(Hitbox::Shape::Cylinder);
     }
 }
 
@@ -532,10 +528,15 @@ void Game::drawEntities() {
     for (auto &shape : shapes) {
         shape->draw(*shaders.gameShader, glm::mat4(1.0f));
     }
-    if (!gameSettings.is_instanced)
+    if (!gameSettings.is_instanced) {
         bulletBuffer.drawActiveElements(*shaders.gameShader);
-    else
+        if (hitboxShape && hitboxCylinderShape && settings.showHitboxes) {
+            bulletBuffer.drawActiveHitboxes(*shaders.gameShader, *hitboxShape,
+                                            *hitboxCylinderShape);
+        }
+    } else {
         drawBulletsInstanced();
+    }
     for (int i = 0; i < 6; ++i) {
         axes[i]->draw(*shaders.gameShader, glm::mat4(1.0f));
     }
