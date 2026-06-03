@@ -202,6 +202,7 @@ struct Game {
     void updateCamera();
     void checkPlayerCollision();
     void checkPlateCollision();
+    void checkBulletCollisions();
     void drawEntities();
     void printStats();
     void drawText(TextData &text);

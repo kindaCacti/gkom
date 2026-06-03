@@ -8,7 +8,7 @@
 #define IS_INSTANCED true
 #define BENCHMARK_ON true
 
-#define MAX_BULLETS 100000
+#define MAX_BULLETS 500000
 #define MAX_ENEMIES 1000
 
 #define BULLET_SPEED 10.0f

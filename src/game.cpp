@@ -56,8 +56,7 @@ void Game::updateScene() {
     }
     shootIfTime(BULLET_SPEED);
     moveRemoveBullets();
-    checkPlateCollision();
-    checkPlayerCollision();
+    checkBulletCollisions();
     updateCamera();
 
     expensiveChecks = 0;
@@ -534,6 +533,32 @@ void Game::checkPlateCollision() {
             bulletBuffer.deactivateElement(static_cast<size_t>(bulletId));
         }
     }
+}
+
+void Game::checkBulletCollisions() {
+    if (!gameSettings.collisionsEnabled)
+        return;
+
+    std::vector<HitboxedDrawableEntity *> targets;
+    targets.reserve(plates.size() + 1);
+    for (auto &plate : plates) {
+        targets.push_back(plate.get());
+    }
+    targets.push_back(player.get());
+
+    const size_t playerIndex = targets.size() - 1;
+    const bool deactivateOnHit = !gameSettings.is_benchmark;
+
+    bulletBuffer.collideActiveBulletsFirstHit(
+        targets, deactivateOnHit,
+        [&](size_t /*bulletIndex*/, size_t targetIndex,
+            HitboxedDrawableEntity * /*target*/) {
+            if (gameSettings.is_benchmark)
+                return;
+            if (targetIndex == playerIndex) {
+                --player->lives;
+            }
+        });
 }
 
 void Game::drawEntities() {

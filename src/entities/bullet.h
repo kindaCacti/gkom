@@ -16,6 +16,12 @@
 class Bullet : public HitboxedDrawableEntity {
     float _speed;
     glm::vec3 _direction;
+    glm::vec3 _moveDir = glm::vec3(1.0f, 0.0f, 0.0f);
+    glm::vec3 _hitboxOffsetWorld = glm::vec3(0.0f);
+    glm::mat4 _localWithShape = glm::mat4(1.0f); // R * S * shapeTransform
+
+    void refreshMoveDir();
+    void refreshCachedLocal();
 
   public:
     Bullet(std::unique_ptr<Shape> &&shape, float speed, glm::vec3 &direction)
@@ -23,7 +29,7 @@ class Bullet : public HitboxedDrawableEntity {
           _speed(speed), _direction(direction) {
         setHitboxShape(Hitbox::Shape::Cylinder);
         setCylinderAxis(Hitbox::CylinderAxis::X);
-        setRotation(_direction.x, _direction.y, _direction.z);
+        setDirection(direction);
     }
     Bullet(const Bullet &) = default;
     Bullet(Bullet &&) = default;
@@ -34,10 +40,19 @@ class Bullet : public HitboxedDrawableEntity {
     void rotateTowardsTarget(float delta_time, glm::vec3 target);
     void step(float delta_time, glm::vec3 target);
     void setSpeed(float speed) { _speed = speed; }
-    void setDirection(glm::vec3 direction) {
-        _direction = std::move(direction);
-        setRotation(_direction.x, _direction.y, _direction.z);
+    void setDirection(glm::vec3 direction);
+
+    void setShape(std::unique_ptr<Shape> &&shape) override;
+
+    inline glm::vec3 hitboxCenterWorldCached() const {
+        return _pos + _hitboxOffsetWorld;
     }
+
+    inline const glm::mat4 &localWithShapeTransformCached() const {
+        return _localWithShape;
+    }
+
+    glm::mat4 getTransformMatrixWithShapeTransform() const override;
 };
 
 #endif
