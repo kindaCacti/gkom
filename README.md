@@ -20,3 +20,4 @@ Oftentimes when trying to use `-fsanitize=address` it detects leaks that we are 
 | Laptop | i7-9750H      | UHD 630  | Windows | On         | ~75k   | ~30k   |
 | Laptop | i7-9750H      | UHD 630  | Windows | Off        | ~16k   | ~8k    |
 | PC     | Ryzen 9 9950X | RTX 5070 | Linux   | On         | ~300k  | ~200k  |
+| PC     | Ryzen 9 9950X | RTX 5070 | Linux   | Off        | ~40k   | ~20k   |
