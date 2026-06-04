@@ -5,16 +5,45 @@
 #include "defines.h"
 #include "game.h"
 
+#include "ui.h"
+
 static bool isPressed(GLFWwindow *window, int key) {
     return glfwGetKey(window, key) == GLFW_PRESS;
 }
 
-void processInput(GLFWwindow *window, Game &game, float deltaTime) {
+void processInput(GLFWwindow *window, Game &game, float deltaTime,
+                  AppState &currentState) {
     if (window == nullptr)
         return;
 
     if (isPressed(window, KEYBIND_EXIT))
         glfwSetWindowShouldClose(window, true);
+
+    static bool wasPausePressed = false;
+    bool isPausePressed = isPressed(window, KEYBIND_PAUSE);
+
+    if (isPausePressed && !wasPausePressed) {
+        if (currentState == AppState::InGame) {
+            currentState = AppState::Paused;
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+
+            //saving pause start
+            game.timeBundle.pauseStartTime = static_cast<float>(glfwGetTime());
+
+        } else if (currentState == AppState::Paused) {
+            currentState = AppState::InGame;
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
+            float currentTime = static_cast<float>(glfwGetTime());
+
+            // changing time of playing
+            game.timeBundle.gameStartTime +=
+                (currentTime - game.timeBundle.pauseStartTime);
+
+            game.timeBundle.lastFrameTime = currentTime;
+        }
+    }
+    wasPausePressed = isPausePressed;
 
     const float step = MOVEMENT_SPEED * deltaTime;
     glm::vec3 forward_dir;

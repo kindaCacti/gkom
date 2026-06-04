@@ -102,9 +102,14 @@ shader:
 
 default_settings:
   window:
-    width: 800
-    height: 600
+    width: 1000
+    height: 800
     title: "Coffee Invaders"
   is_instanced: true
   is_benchmark: false
   collisions_enabled: true
+  display_time: true
+  show_stats: false
+  show_hitboxes: false
+  show_spawning_areas: false
+  difficulty_idx: 1

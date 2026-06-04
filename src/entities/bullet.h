@@ -31,10 +31,10 @@ class Bullet : public HitboxedDrawableEntity {
         setCylinderAxis(Hitbox::CylinderAxis::X);
         setDirection(direction);
     }
-    Bullet(const Bullet &) = default;
+    Bullet(const Bullet &) = delete;
     Bullet(Bullet &&) = default;
     Bullet &operator=(Bullet &&bullet) = default;
-    Bullet &operator=(const Bullet &bullet) = default;
+    Bullet &operator=(const Bullet &bullet) = delete;
     ~Bullet() = default;
 
     void rotateTowardsTarget(float delta_time, glm::vec3 target);

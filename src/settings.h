@@ -54,6 +54,11 @@ struct Settings {
     bool is_instanced = IS_INSTANCED;
     bool is_benchmark = BENCHMARK_ON;
     bool collisionsEnabled = true;
+    bool displayTime = true;
+    bool showStats = false;
+    bool showHitboxes = false;
+    bool showSpawningAreas = false;
+    int difficultyIdx = 1;
 };
 
 inline void loadMeshesToSettings(Settings &settings, YAML::Node &yamlNode) {
@@ -133,6 +138,16 @@ inline void loadDefaultsToSettings(Settings &settings, YAML::Node &yamlNode) {
         settings.is_benchmark = yamlNode["is_benchmark"].as<bool>();
     if (yamlNode["collisions_enabled"].IsDefined())
         settings.collisionsEnabled = yamlNode["collisions_enabled"].as<bool>();
+    if (yamlNode["display_time"].IsDefined())
+        settings.displayTime = yamlNode["display_time"].as<bool>();
+    if (yamlNode["show_stats"].IsDefined())
+        settings.showStats = yamlNode["show_stats"].as<bool>();
+    if (yamlNode["show_hitboxes"].IsDefined())
+        settings.showHitboxes = yamlNode["show_hitboxes"].as<bool>();
+    if (yamlNode["show_spawning_areas"].IsDefined())
+        settings.showSpawningAreas = yamlNode["show_spawning_areas"].as<bool>();
+    if (yamlNode["difficulty_idx"].IsDefined())
+        settings.difficultyIdx = yamlNode["difficulty_idx"].as<int>();
 }
 
 inline Settings loadSettingsFromYaml(std::string path) {

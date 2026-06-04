@@ -25,6 +25,8 @@ class emiter : public virtual Entity {
         _timeBetweenShots = timeBetweenShots;
     }
 
+    virtual ~emiter() = default;
+
     float getTimeBetweenShots() const { return _timeBetweenShots; }
 
     emiter(float currentTime, float timeBetweenShots)

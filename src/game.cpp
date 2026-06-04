@@ -180,7 +180,20 @@ void Game::spawnPlayer() {
 void Game::resetPlayer() {
     player->setPosition(0.f, 0.f, 0.f);
     player->setRotation(0.f, 0.f, 0.f);
-    player->lives = DEFAULT_PLAYER_HEARTS;
+    switch (settings.difficultyIdx) {
+    case 0:
+        player->lives = 5;
+        break;
+    case 1:
+        player->lives = 3;
+        break;
+    case 2:
+        player->lives = 1;
+        break;
+    default:
+        player->lives = 3;
+        break;
+    }
 }
 
 void Game::spawnPlates() {
@@ -308,7 +321,7 @@ void Game::spawnEnemy(glm::vec3 position, glm::vec3 rotation) {
     // EnemyType type =
     //     static_cast<EnemyType>(static_cast<float>(rand()) / RAND_MAX * 4.0f);
     enemies.push_back(std::make_shared<Enemy>(
-        std::move(shapeFactory.createShape(Enemy::getAssetName(type))), type,
+        shapeFactory.createShape(Enemy::getAssetName(type)), type,
         currentFrameTime()));
     enemies.back()->setPosition(position);
     enemies.back()->setRotation(rotation);
@@ -595,81 +608,82 @@ void Game::bundledDrawText(std::vector<TextData> &texts) {
 }
 
 void Game::printStats() {
-    int fps = std::round(1.0f / (deltaTime() + 0.0001f));
+    // int fps = std::round(1.0f / (deltaTime() + 0.0001f));
 
-    static std::array<TextData, 6> texts = {
-        TextData{.text = "",
-                 .x = 20.0f,
-                 .y = 580.0f,
-                 .scale = 0.3f,
-                 .color = glm::vec3(1.0f)},
-        TextData{.text = "",
-                 .x = 20.0f,
-                 .y = 560.0f,
-                 .scale = 0.3f,
-                 .color = glm::vec3(1.0f)},
-        TextData{.text = "",
-                 .x = 20.0f,
-                 .y = 540.0f,
-                 .scale = 0.3f,
-                 .color = glm::vec3(1.0f)},
-        TextData{.text = "",
-                 .x = 20.0f,
-                 .y = 520.0f,
-                 .scale = 0.3f,
-                 .color = glm::vec3(1.0f)},
-        TextData{.text = "",
-                 .x = 20.0f,
-                 .y = 500.0f,
-                 .scale = 0.3f,
-                 .color = glm::vec3(1.0f)},
-        TextData{.text = "",
-                 .x = 20.0f,
-                 .y = 480.0f,
-                 .scale = 0.3f,
-                 .color = glm::vec3(1.0f)},
-    };
+    // static std::array<TextData, 6> texts = {
+    //     TextData{.text = "",
+    //              .x = 20.0f,
+    //              .y = 580.0f,
+    //              .scale = 0.3f,
+    //              .color = glm::vec3(1.0f)},
+    //     TextData{.text = "",
+    //              .x = 20.0f,
+    //              .y = 560.0f,
+    //              .scale = 0.3f,
+    //              .color = glm::vec3(1.0f)},
+    //     TextData{.text = "",
+    //              .x = 20.0f,
+    //              .y = 540.0f,
+    //              .scale = 0.3f,
+    //              .color = glm::vec3(1.0f)},
+    //     TextData{.text = "",
+    //              .x = 20.0f,
+    //              .y = 520.0f,
+    //              .scale = 0.3f,
+    //              .color = glm::vec3(1.0f)},
+    //     TextData{.text = "",
+    //              .x = 20.0f,
+    //              .y = 500.0f,
+    //              .scale = 0.3f,
+    //              .color = glm::vec3(1.0f)},
+    //     TextData{.text = "",
+    //              .x = 20.0f,
+    //              .y = 480.0f,
+    //              .scale = 0.3f,
+    //              .color = glm::vec3(1.0f)},
+    // };
 
-    // Reuse string capacity to avoid per-frame allocations.
-    texts[0].text.clear();
-    texts[0].text.append("fps: ");
-    texts[0].text.append(std::to_string(fps));
+    // // Reuse string capacity to avoid per-frame allocations.
+    // texts[0].text.clear();
+    // texts[0].text.append("fps: ");
+    // texts[0].text.append(std::to_string(fps));
 
-    texts[1].text.clear();
-    texts[1].text.append("bullets: ");
-    texts[1].text.append(std::to_string(bulletBuffer.activeElementCount()));
+    // texts[1].text.clear();
+    // texts[1].text.append("bullets: ");
+    // texts[1].text.append(std::to_string(bulletBuffer.activeElementCount()));
 
-    texts[2].text.clear();
-    texts[2].text.append("draw calls: ");
-    texts[2].text.append(std::to_string(gameStateData.drawCallsMade));
+    // texts[2].text.clear();
+    // texts[2].text.append("draw calls: ");
+    // texts[2].text.append(std::to_string(gameStateData.drawCallsMade));
 
-    texts[3].text.clear();
-    texts[3].text.append("score: ");
-    texts[3].text.append(
-        std::to_string(static_cast<int>(std::floor(gameplayTime() * 100))));
+    // texts[3].text.clear();
+    // texts[3].text.append("score: ");
+    // texts[3].text.append(
+    //     std::to_string(static_cast<int>(std::floor(gameplayTime() * 100))));
 
-    {
-        const glm::vec3 p = player->get_pos();
-        char buf[96];
-        std::snprintf(buf, sizeof(buf), "Player pos: (%.1f, %.1f, %.1f)", p.x,
-                      p.y, p.z);
-        texts[4].text.assign(buf);
-    }
+    // {
+    //     const glm::vec3 p = player->get_pos();
+    //     char buf[96];
+    //     std::snprintf(buf, sizeof(buf), "Player pos: (%.1f, %.1f, %.1f)",
+    //     p.x,
+    //                   p.y, p.z);
+    //     texts[4].text.assign(buf);
+    // }
 
-    {
-        char buf[96];
-        std::snprintf(buf, sizeof(buf), "Collisions - E: %d, C: %d, V: %d",
-                      expensiveChecks, cheapChecks, veryCheapChecks);
-        texts[5].text.assign(buf);
-    }
+    // {
+    //     char buf[96];
+    //     std::snprintf(buf, sizeof(buf), "Collisions - E: %d, C: %d, V: %d",
+    //                   expensiveChecks, cheapChecks, veryCheapChecks);
+    //     texts[5].text.assign(buf);
+    // }
 
-    glDisable(GL_DEPTH_TEST);
+    // glDisable(GL_DEPTH_TEST);
 
-    for (auto &t : texts) {
-        Text.RenderText(t.text, t.x, t.y, t.scale, t.color);
-    }
+    // for (auto &t : texts) {
+    //     Text.RenderText(t.text, t.x, t.y, t.scale, t.color);
+    // }
 
-    glEnable(GL_DEPTH_TEST);
+    // glEnable(GL_DEPTH_TEST);
 }
 
 void Game::showHeart(glm::vec3 pos) {
