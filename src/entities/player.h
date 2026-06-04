@@ -16,7 +16,7 @@ class Player : public HitboxedDrawableEntity {
   public:
     int lives = 3;
 
-    Player() = default;
+    Player() = delete;
     Player(std::unique_ptr<Shape> &&shape)
         : DrawableEntity(std::move(shape)), HitboxedDrawableEntity(nullptr) {}
     // Player& operator=(Player&& player) = default;

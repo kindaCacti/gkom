@@ -26,7 +26,7 @@ class Enemy : public HitboxedDrawableEntity, public emiter {
   public:
     EnemyType type;
 
-    Enemy() = default;
+    Enemy() = delete;
     Enemy(std::unique_ptr<Shape> &&shape, EnemyType type, float currentTime)
         : DrawableEntity(std::move(shape)), HitboxedDrawableEntity(nullptr),
           emiter(currentTime, 2137.0f), type(type) {

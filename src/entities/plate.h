@@ -15,7 +15,7 @@
 class Plate : public HitboxedDrawableEntity {
 
   public:
-    Plate() = default;
+    Plate() = delete;
     Plate(std::unique_ptr<Shape> &&shape)
         : DrawableEntity(std::move(shape)), HitboxedDrawableEntity(nullptr) {}
 };

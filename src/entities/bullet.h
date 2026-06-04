@@ -21,10 +21,10 @@ class Bullet : public HitboxedDrawableEntity {
     Bullet(std::unique_ptr<Shape> &&shape, float speed, glm::vec3 &direction)
         : DrawableEntity(std::move(shape)), HitboxedDrawableEntity(nullptr),
           _speed(speed), _direction(direction) {}
-    Bullet(const Bullet &) = default;
+    Bullet(const Bullet &) = delete;
     Bullet(Bullet &&) = default;
     Bullet &operator=(Bullet &&bullet) = default;
-    Bullet &operator=(const Bullet &bullet) = default;
+    Bullet &operator=(const Bullet &bullet) = delete;
     ~Bullet() = default;
 
     void rotateTowardsTarget(float delta_time, glm::vec3 target);

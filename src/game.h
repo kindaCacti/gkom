@@ -80,8 +80,8 @@ struct SpawnArea {
 
     float surfaceArea() const { return (xMax - xMin) * (yMax - yMin); }
     glm::vec3 randomSample() const {
-        float x = xMin + static_cast<float>(rand()) / RAND_MAX * (xMax - xMin);
-        float y = yMin + static_cast<float>(rand()) / RAND_MAX * (yMax - yMin);
+        float x = xMin + static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * (xMax - xMin);
+        float y = yMin + static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * (yMax - yMin);
         return glm::vec3(x, y, zLevel);
     }
 };
@@ -97,7 +97,7 @@ struct SpawnAreas {
     }
 
     glm::vec3 randomSample() const {
-        float r = static_cast<float>(rand()) / RAND_MAX * totalSurfaceArea;
+        float r = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * totalSurfaceArea;
         float cumulative = 0.f;
         for (const auto &area : areas) {
             cumulative += area.surfaceArea();

@@ -28,7 +28,7 @@
 // settings
 
 int main() {
-    gameSettings = std::move(loadSettingsFromYaml(SETTINGS_FILE_PATH));
+    gameSettings = loadSettingsFromYaml(SETTINGS_FILE_PATH);
 
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);

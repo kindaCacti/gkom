@@ -235,8 +235,10 @@ void Game::spawnEnemy(glm::vec3 position, glm::vec3 rotation) {
     // EnemyType type =
     //     static_cast<EnemyType>(static_cast<float>(rand()) / RAND_MAX * 4.0f);
     enemies.push_back(std::make_shared<Enemy>(
-        std::move(shapeFactory.createShape(Enemy::getAssetName(type))), type,
-        currentFrameTime()));
+        shapeFactory.createShape(Enemy::getAssetName(type)),
+        type,
+        currentFrameTime()
+    ));
     enemies.back()->setPosition(position);
     enemies.back()->setRotation(rotation);
 }
