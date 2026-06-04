@@ -62,6 +62,7 @@ struct TimeBundle {
     float currentFrameTime;
     float lastFrameTime;
     float gameStartTime;
+    float pauseStartTime = 0.0f;
 
     TimeBundle()
         : currentFrameTime(static_cast<float>(glfwGetTime())),

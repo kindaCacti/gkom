@@ -68,6 +68,9 @@ void GameUI::render(AppState &currentState, Game &game, GLFWwindow *window) {
     case AppState::Settings:
         drawSettings(currentState, game);
         break;
+    case AppState::Paused:
+        drawPauseScreen(currentState, window, game);
+        break;
     case AppState::GameOver:
         drawGameOver(currentState, game, window);
         break;
@@ -159,7 +162,7 @@ void GameUI::drawSettings(AppState &currentState, Game &game) {
     float buttonHeight = 50.0f;
     float centerX = (windowWidth - buttonWidth) * 0.5f;
 
-    ImGui::SetCursorPos(ImVec2(centerX, windowHeight * 0.40f));
+    ImGui::SetCursorPos(ImVec2(centerX, windowHeight * 0.50f));
     if (ImGui::Button("<- BACK TO MENU", ImVec2(buttonWidth, buttonHeight))) {
         currentState = AppState::StartScreen;
     }
@@ -168,14 +171,14 @@ void GameUI::drawSettings(AppState &currentState, Game &game) {
     float panelHeight = 300.0f;
     float panelX = (windowWidth - panelWidth) * 0.5f;
 
-    ImGui::SetCursorPos(ImVec2(panelX, windowHeight * 0.50f));
+    ImGui::SetCursorPos(ImVec2(panelX, windowHeight * 0.60f));
     ImGui::BeginChild("SettingsPanel", ImVec2(panelWidth, panelHeight), true);
 
     if (ImGui::BeginTabBar("Tabs")) {
 
         if (ImGui::BeginTabItem("Player")) {
             ImGui::Spacing();
-            ImGui::Checkbox("Show Game Time", &game.settings.displayTime);
+            ImGui::Checkbox("Show Score", &game.settings.displayTime);
             ImGui::Spacing();
 
             const char *diffs[] = {"Easy", "Medium", "Hard"};
@@ -190,7 +193,8 @@ void GameUI::drawSettings(AppState &currentState, Game &game) {
             ImGui::Text("Basic Controls:");
             ImGui::BulletText("WSAD - Move ship");
             ImGui::BulletText("Right Mouse Button - Move plate");
-            ImGui::BulletText("ESC - Exit to menu / Pause");
+            ImGui::BulletText("P - Pause/resume game");
+            ImGui::BulletText("ESC - Exit game");
 
             ImGui::EndTabItem();
         }
@@ -214,6 +218,59 @@ void GameUI::drawSettings(AppState &currentState, Game &game) {
     }
 
     ImGui::EndChild();
+    ImGui::End();
+}
+
+void GameUI::drawPauseScreen(AppState &currentState, GLFWwindow *window,
+                             Game &game) {
+    ImGuiIO &io = ImGui::GetIO();
+    ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f));
+    ImGui::SetNextWindowSize(io.DisplaySize);
+
+    ImGui::Begin("PauseMenu", nullptr, ImGuiWindowFlags_NoDecoration);
+
+    // Półprzezroczyste (Alpha: 200) ciemne cyjanowe tło (widać zatrzymaną grę!)
+    ImGui::GetWindowDrawList()->AddRectFilled(ImVec2(0, 0), io.DisplaySize,
+                                              IM_COL32(15, 60, 60, 200));
+
+    float windowWidth = io.DisplaySize.x;
+    float windowHeight = io.DisplaySize.y;
+
+    // --- WIELKI NAPIS PAUSE ---
+    const char *pauseText = "PAUSE";
+    ImGui::SetWindowFontScale(3.0f); // Tymczasowo powiększamy czcionkę
+    ImVec2 textSize = ImGui::CalcTextSize(pauseText);
+    ImGui::SetCursorPos(
+        ImVec2((windowWidth - textSize.x) * 0.5f, windowHeight * 0.35f));
+    ImGui::Text("%s", pauseText);
+    ImGui::SetWindowFontScale(1.0f); // Wracamy do domyślnej czcionki
+
+    // --- PRZYCISK RESUME ---
+    float buttonWidth = 250.0f;
+    float buttonHeight = 60.0f;
+    float buttonStartX = (windowWidth - buttonWidth) * 0.5f;
+
+    ImGui::SetCursorPos(ImVec2(buttonStartX, windowHeight * 0.50f));
+    if (ImGui::Button("RESUME", ImVec2(buttonWidth, buttonHeight))) {
+        currentState = AppState::InGame;
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
+        float currentTime = static_cast<float>(glfwGetTime());
+
+        // changing play time
+        game.timeBundle.gameStartTime +=
+            (currentTime - game.timeBundle.pauseStartTime);
+
+        game.timeBundle.lastFrameTime = currentTime;
+    }
+
+    // Opcjonalnie: Powrót do menu
+    ImGui::SetCursorPos(
+        ImVec2(buttonStartX, windowHeight * 0.50f + buttonHeight + 20.0f));
+    if (ImGui::Button("MAIN MENU", ImVec2(buttonWidth, buttonHeight))) {
+        currentState = AppState::StartScreen;
+    }
+
     ImGui::End();
 }
 

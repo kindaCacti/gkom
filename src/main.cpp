@@ -102,36 +102,29 @@ int main() {
             gameStateData.newFrame();
             game.doFramePreprocessing();
 
-            // 1. AKTUALIZACJA LOGIKI GRY (tylko w trakcie grania)
+            // 1. OBSŁUGA WEJŚCIA
+            // Zawsze wywołujemy processInput. Przekazujemy mu currentState,
+            // aby samo decydowało czy można się ruszać, czy tylko przełączać pauzę/wyjście.
+            processInput(window, game, game.deltaTime(), currentState);
+
+            // 2. AKTUALIZACJA LOGIKI GRY (tylko w trakcie grania)
             if (currentState == AppState::InGame) {
-                processInput(window, game, game.deltaTime());
                 game.updateScene();
 
-                // Przykładowe przejście do Game Over (zmodyfikuj pod swoją
-                // kolizję)
+                // Sprawdzanie warunku przegranej
                 if (game.shouldEnd()) {
                     currentState = AppState::GameOver;
                     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
                 }
-            } else {
-                // Pozwalamy wyjść z menu/gry klawiszem ESC (tymczasowe
-                // obejście, bo procesInput jest zatrzymane)
-                if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
-                    glfwSetWindowShouldClose(window, true);
-                }
             }
 
-            // 2. RENDEROWANIE OPENGL (Świata pod spodem)
+            // 3. RENDEROWANIE OPENGL (Świat pod spodem)
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 
-            game.drawScene();
+            game.drawScene(); // Zawsze renderujemy 3D, żeby widzieć tło z menu/pauzą
 
-            if (currentState == AppState::InGame) {
-                game.printStats();
-            }
-
-            // 3. RENDEROWANIE UI (Zawsze na wierzchu)
+            // 4. RENDEROWANIE UI (Zawsze na wierzchu)
             gameUI.render(currentState, game, window);
 
             glfwSwapBuffers(window);

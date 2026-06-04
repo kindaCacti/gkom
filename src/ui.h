@@ -6,7 +6,7 @@
 #include "game.h"
 
 // Enum managing game states
-enum class AppState { StartScreen, Settings, InGame, GameOver };
+enum class AppState { StartScreen, Settings, InGame, GameOver, Paused };
 
 class GameUI {
   public:
@@ -16,8 +16,11 @@ class GameUI {
     void shutdown();
 
   private:
-    void drawStartScreen(AppState &currentState, GLFWwindow *window, Game& game);
-    void drawSettings(AppState &currentState, Game &game); // <--- Przekazujemy Game
+    void drawStartScreen(AppState &currentState, GLFWwindow *window,
+                         Game &game);
+    void drawSettings(AppState &currentState, Game &game);
+    void drawPauseScreen(AppState &currentState, GLFWwindow *window,
+                         Game &game); // Ekran Pauzy
     void drawGameOver(AppState &currentState, Game &game, GLFWwindow *window);
     void drawHUD(Game &game);
 

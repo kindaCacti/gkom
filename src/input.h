@@ -6,6 +6,8 @@
 #endif
 #include <GLFW/glfw3.h>
 
+enum class AppState;
+
 #define KEYBIND_MOVE_FORWARD GLFW_KEY_W
 #define KEYBIND_MOVE_BACKWARD GLFW_KEY_S
 #define KEYBIND_MOVE_LEFT GLFW_KEY_A
@@ -15,9 +17,10 @@
 #define KEYBIND_RESET GLFW_KEY_R
 #define KEYBIND_SHOW_HITBOXES GLFW_KEY_H
 #define KEYBIND_SHOW_SPAWNING_AREAS GLFW_KEY_J
+#define KEYBIND_PAUSE GLFW_KEY_P
 
 struct Game;
 
-void processInput(GLFWwindow *window, Game &game, float deltaTime);
+void processInput(GLFWwindow *window, Game &game, float deltaTime, AppState &currentState);
 
 #endif
