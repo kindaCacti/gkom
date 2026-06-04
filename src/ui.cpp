@@ -4,16 +4,20 @@
 // stb_image header - assuming implementation is compiled in stb_image.cpp
 #include "stb_image.h"
 
+#ifdef __clang__
 // --- SILENCE WARNINGS FOR IMGUI (Apple Clang) ---
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wnontrivial-memcall"
+#endif
 
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 
+#ifdef __clang__
 #pragma clang diagnostic pop
 // --- END WARNING SILENCE ---
+#endif
 
 #include "globals.h"
 
