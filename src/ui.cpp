@@ -299,11 +299,33 @@ void GameUI::drawGameOver(AppState &currentState, Game &game,
                      ImVec2(drawWidth, drawHeight));
     }
 
-    const char *text = "Drowned in coffee!";
-    ImVec2 textSize = ImGui::CalcTextSize(text);
+    static int finalScore = 0;
+    static bool isScoreSaved = false;
+
+    // Jeśli to pierwsza klatka po przegranej, obliczamy i zapisujemy wynik na
+    // stałe
+    if (!isScoreSaved) {
+        finalScore = static_cast<int>(std::floor(game.gameplayTime() * 100));
+        isScoreSaved = true;
+    }
+
+    // --- POŁĄCZONY TEKST I WYNIK W JEDNEJ LINII ---
+    const char *baseText = "Drowned in coffee!  -  ";
+    char scoreText[64];
+    snprintf(scoreText, sizeof(scoreText), "SCORE: %d",
+             finalScore); // Używamy ZAMROŻONEGO wyniku
+
+    ImVec2 baseTextSize = ImGui::CalcTextSize(baseText);
+    ImVec2 scoreTextSize = ImGui::CalcTextSize(scoreText);
+
+    float totalWidth = baseTextSize.x + scoreTextSize.x;
+
     ImGui::SetCursorPos(
-        ImVec2((windowWidth - textSize.x) * 0.5f, windowHeight * 0.50f));
-    ImGui::Text("%s", text);
+        ImVec2((windowWidth - totalWidth) * 0.5f, windowHeight * 0.50f));
+    ImGui::Text("%s", baseText);
+
+    ImGui::SameLine(0.0f, 0.0f);
+    ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.0f, 1.0f), "%s", scoreText);
 
     float buttonWidth = 250.0f;
     float buttonHeight = 60.0f;
