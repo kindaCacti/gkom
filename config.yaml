@@ -106,5 +106,5 @@ default_settings:
     height: 600
     title: "Coffee Invaders"
   is_instanced: true
-  is_benchmark: true
+  is_benchmark: false
   collisions_enabled: true

@@ -312,7 +312,7 @@ void Game::spawnEnemy(glm::vec3 position, glm::vec3 rotation) {
         currentFrameTime()));
     enemies.back()->setPosition(position);
     enemies.back()->setRotation(rotation);
-    if (settings.benchmarkOn) {
+    if (gameSettings.is_benchmark) {
         // For benchmark, spawn stronger enemies to increase difficulty faster.
         enemies.back()->upgrade(shapeFactory, currentFrameTime(), true);
     }
@@ -323,7 +323,7 @@ void Game::spawnRandomEnemy() {
     float angle = std::atan2(-position.y, -position.x); // angle towards center
     glm::vec3 rotation = glm::vec3(
         0.f, 0.f, glm::degrees(angle) + getRandomFloatBetween(-10.f, 10.f));
-    if (settings.benchmarkOn) {
+    if (gameSettings.is_benchmark) {
         spawnEnemy(position,
                    rotation); // no rotation for benchmark enemies
         return;
