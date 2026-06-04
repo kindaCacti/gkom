@@ -49,8 +49,13 @@ struct GameSettings {
     bool benchmarkOn = BENCHMARK_ON;
     int startingEmmitersCount = 1;
     float addEmmiterAfterTime = 1.0f;
+
+    // for UI
     bool showHitboxes = false;
     bool showSpawningAreas = false;
+    bool displayTime = true;       // Pokazywanie czasu/wyniku gracza
+    bool showStats = false;        // Pokazywanie statystyk deweloperskich (FPS itp.)
+    int difficultyIdx = 1;         // Poziom trudności
 };
 
 struct TimeBundle {

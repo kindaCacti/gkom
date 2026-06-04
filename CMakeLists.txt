@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.28)
 
-# FIX FOR CMAKE 4.0+: Forces legacy sub-dependencies (like FreeType) 
+# FIX FOR CMAKE 4.0+: Forces legacy sub-dependencies (like FreeType)
 # to comply with minimum policy rules without breaking the setup.
 set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
 
@@ -67,11 +67,11 @@ endif()
 
 find_package(glfw3 REQUIRED)
 
+include(FetchContent)
+
 # -------------------------------------------------------------------
 # AUTOMATICALLY FETCH AND BUILD FREETYPE
 # -------------------------------------------------------------------
-include(FetchContent)
-
 set(SKIP_INSTALL_ALL ON CACHE INTERNAL "")
 set(FT_DISABLE_ZLIB ON CACHE INTERNAL "")
 set(FT_DISABLE_BZIP2 ON CACHE INTERNAL "")
@@ -84,14 +84,11 @@ FetchContent_Declare(
     GIT_REPOSITORY https://github.com/freetype/freetype.git
     GIT_TAG        VER-2-13-2
 )
-
 FetchContent_MakeAvailable(freetype)
-# -------------------------------------------------------------------
 
 # -------------------------------------------------------------------
 # AUTOMATICALLY FETCH AND BUILD YAML-CPP
 # -------------------------------------------------------------------
-# Disable the parts of yaml-cpp we don't need so the build stays small.
 set(YAML_CPP_BUILD_TESTS    OFF CACHE INTERNAL "")
 set(YAML_CPP_BUILD_TOOLS    OFF CACHE INTERNAL "")
 set(YAML_CPP_BUILD_CONTRIB  OFF CACHE INTERNAL "")
@@ -103,14 +100,43 @@ FetchContent_Declare(
     GIT_REPOSITORY https://github.com/jbeder/yaml-cpp.git
     GIT_TAG        0.8.0
 )
-
 FetchContent_MakeAvailable(yaml-cpp)
+
+# -------------------------------------------------------------------
+# AUTOMATICALLY FETCH IMGUI
+# -------------------------------------------------------------------
+FetchContent_Declare(
+    imgui
+    GIT_REPOSITORY https://github.com/ocornut/imgui.git
+    GIT_TAG        v1.90.4 # Stabilna wersja
+)
+FetchContent_MakeAvailable(imgui)
+
+add_library(imgui STATIC
+    ${imgui_SOURCE_DIR}/imgui.cpp
+    ${imgui_SOURCE_DIR}/imgui_draw.cpp
+    ${imgui_SOURCE_DIR}/imgui_tables.cpp
+    ${imgui_SOURCE_DIR}/imgui_widgets.cpp
+    ${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp
+    ${imgui_SOURCE_DIR}/backends/imgui_impl_opengl3.cpp
+)
+
+# Backend ImGui potrzebuje dostępu do GLFW i GLAD
+target_include_directories(imgui PRIVATE includes/glad/include)
+target_link_libraries(imgui PRIVATE glfw)
+
+# Publicznie udostępniamy nagłówki ImGui, żeby Twoja gra je widziała
+target_include_directories(imgui SYSTEM PUBLIC
+    ${imgui_SOURCE_DIR}
+    ${imgui_SOURCE_DIR}/backends
+)
 # -------------------------------------------------------------------
 
-add_executable(gkom 
+add_executable(gkom
     src/main.cpp
     src/game.cpp
     src/input.cpp
+    src/ui.cpp
     includes/glad/src/glad.c
     includes/stb/stb_image.cpp
     src/entities/player.cpp
@@ -135,11 +161,12 @@ target_include_directories(glm INTERFACE includes/glm)
 target_compile_definitions(glm INTERFACE GLM_ENABLE_EXPERIMENTAL)
 
 # Link your dependencies
-target_link_libraries(gkom 
+target_link_libraries(gkom
     PRIVATE
-    glfw 
-    ${CMAKE_DL_LIBS} 
+    glfw
+    ${CMAKE_DL_LIBS}
     glm
     freetype
     yaml-cpp::yaml-cpp
+    imgui
 )

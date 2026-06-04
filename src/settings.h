@@ -54,6 +54,11 @@ struct Settings {
     std::string title = "Coffee Invaders";
     bool is_instanced = IS_INSTANCED;
     bool is_benchmark = BENCHMARK_ON;
+    bool displayTime = true;
+    bool showStats = false;
+    bool showHitboxes = false;
+    bool showSpawningAreas = false;
+    int difficultyIdx = 1;
 };
 
 inline void loadMeshesToSettings(Settings& settings, YAML::Node& yamlNode) {
@@ -134,6 +139,12 @@ inline void loadDefaultsToSettings(Settings& settings, YAML::Node& yamlNode) {
     }
     if(yamlNode["is_instanced"].IsDefined()) settings.is_instanced = yamlNode["is_instanced"].as<bool>();
     if(yamlNode["is_benchmark"].IsDefined()) settings.is_benchmark = yamlNode["is_benchmark"].as<bool>();
+
+    if(yamlNode["display_time"].IsDefined()) settings.displayTime = yamlNode["display_time"].as<bool>();
+    if(yamlNode["show_stats"].IsDefined()) settings.showStats = yamlNode["show_stats"].as<bool>();
+    if(yamlNode["show_hitboxes"].IsDefined()) settings.showHitboxes = yamlNode["show_hitboxes"].as<bool>();
+    if(yamlNode["show_spawning_areas"].IsDefined()) settings.showSpawningAreas = yamlNode["show_spawning_areas"].as<bool>();
+    if(yamlNode["difficulty_idx"].IsDefined()) settings.difficultyIdx = yamlNode["difficulty_idx"].as<int>();
 }
 
 

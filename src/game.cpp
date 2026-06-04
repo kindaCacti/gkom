@@ -151,7 +151,20 @@ void Game::spawnPlayer() {
 void Game::resetPlayer() {
     player->setPosition(0.f, 0.f, 0.f);
     player->setRotation(0.f, 0.f, 0.f);
-    player->lives = DEFAULT_PLAYER_HEARTS;
+    switch (settings.difficultyIdx) {
+        case 0:
+            player->lives = 5;
+            break;
+        case 1:
+            player->lives = 3;
+            break;
+        case 2:
+            player->lives = 1; 
+            break;
+        default:
+            player->lives = 3;
+            break;
+    }
 }
 
 void Game::spawnPlates() {
@@ -493,46 +506,46 @@ inline auto formatVec3_1dp = [](const glm::vec3 &v) {
 };
 
 void Game::printStats() {
-    int fps = std::round(1.0f / (deltaTime() + 0.0001f));
+    // int fps = std::round(1.0f / (deltaTime() + 0.0001f));
 
-    std::vector<TextData> texts = {
-        TextData{.text = std::string("fps: ") + std::to_string(fps),
-                 .x = 20.0f,
-                 .y = 580.0f,
-                 .scale = 0.3f,
-                 .color = glm::vec3(1.0f, 1.0f, 1.0f)},
-        TextData{.text = std::string("bullets: ") +
-                         std::to_string(bulletBuffer.activeElementCount()),
-                 .x = 20.0f,
-                 .y = 560.0f,
-                 .scale = 0.3f,
-                 .color = glm::vec3(1.0f, 1.0f, 1.0f)},
-        TextData{.text = std::string("draw calls: ") +
-                         std::to_string(gameStateData.drawCallsMade),
-                 .x = 20.0f,
-                 .y = 540.0f,
-                 .scale = 0.3f,
-                 .color = glm::vec3(1.0f, 1.0f, 1.0f)},
-        TextData{.text = std::string("score: ") +
-                         std::to_string(static_cast<int>(
-                             std::floor(gameplayTime() * 100))),
-                 .x = 20.0f,
-                 .y = 520.0f,
-                 .scale = 0.3f,
-                 .color = glm::vec3(1.0f, 1.0f, 1.0f)},
-        TextData{.text = std::string("Player pos: ") +
-                         formatVec3_1dp(player->get_pos()),
-                 .x = 20.0f,
-                 .y = 500.0f,
-                 .scale = 0.3f,
-                 .color = glm::vec3(1.0f, 1.0f, 1.0f)},
-    };
+    // std::vector<TextData> texts = {
+    //     TextData{.text = std::string("fps: ") + std::to_string(fps),
+    //              .x = 20.0f,
+    //              .y = 580.0f,
+    //              .scale = 0.3f,
+    //              .color = glm::vec3(1.0f, 1.0f, 1.0f)},
+    //     TextData{.text = std::string("bullets: ") +
+    //                      std::to_string(bulletBuffer.activeElementCount()),
+    //              .x = 20.0f,
+    //              .y = 560.0f,
+    //              .scale = 0.3f,
+    //              .color = glm::vec3(1.0f, 1.0f, 1.0f)},
+    //     TextData{.text = std::string("draw calls: ") +
+    //                      std::to_string(gameStateData.drawCallsMade),
+    //              .x = 20.0f,
+    //              .y = 540.0f,
+    //              .scale = 0.3f,
+    //              .color = glm::vec3(1.0f, 1.0f, 1.0f)},
+    //     TextData{.text = std::string("score: ") +
+    //                      std::to_string(static_cast<int>(
+    //                          std::floor(gameplayTime() * 100))),
+    //              .x = 20.0f,
+    //              .y = 520.0f,
+    //              .scale = 0.3f,
+    //              .color = glm::vec3(1.0f, 1.0f, 1.0f)},
+    //     TextData{.text = std::string("Player pos: ") +
+    //                      formatVec3_1dp(player->get_pos()),
+    //              .x = 20.0f,
+    //              .y = 500.0f,
+    //              .scale = 0.3f,
+    //              .color = glm::vec3(1.0f, 1.0f, 1.0f)},
+    // };
 
-    glDisable(GL_DEPTH_TEST);
+    // glDisable(GL_DEPTH_TEST);
 
-    bundledDrawText(texts);
+    // bundledDrawText(texts);
 
-    glEnable(GL_DEPTH_TEST);
+    // glEnable(GL_DEPTH_TEST);
 }
 
 void Game::showHeart(glm::vec3 pos) {
