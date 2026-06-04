@@ -66,7 +66,7 @@ void GameUI::render(AppState &currentState, Game &game, GLFWwindow *window) {
         drawStartScreen(currentState, window, game);
         break;
     case AppState::Settings:
-        drawSettings(currentState, game); // Przekazujemy game!
+        drawSettings(currentState, game);
         break;
     case AppState::GameOver:
         drawGameOver(currentState, game, window);
@@ -89,7 +89,7 @@ void GameUI::drawStartScreen(AppState &currentState, GLFWwindow *window,
     ImGui::Begin("StartMenu", nullptr, ImGuiWindowFlags_NoDecoration);
 
     ImGui::GetWindowDrawList()->AddRectFilled(ImVec2(0, 0), io.DisplaySize,
-                                              IM_COL32(40, 30, 25, 255));
+                                              IM_COL32(8, 32, 33, 255));
 
     float windowWidth = io.DisplaySize.x;
     float windowHeight = io.DisplaySize.y;
@@ -98,12 +98,18 @@ void GameUI::drawStartScreen(AppState &currentState, GLFWwindow *window,
         float drawWidth = logoWidth * 0.5f;
         float drawHeight = logoHeight * 0.5f;
         float logoX = (windowWidth - drawWidth) * 0.5f;
-        float logoY = windowHeight * 0.20f;
+        float logoY = windowHeight * 0.15f;
 
         ImGui::SetCursorPos(ImVec2(logoX, logoY));
         ImGui::Image((void *)(intptr_t)logoTexture,
                      ImVec2(drawWidth, drawHeight));
     }
+
+    const char *welcomeText = "Get ready to brew some trouble!";
+    ImVec2 textSize = ImGui::CalcTextSize(welcomeText);
+    ImGui::SetCursorPos(
+        ImVec2((windowWidth - textSize.x) * 0.5f, windowHeight * 0.50f));
+    ImGui::Text("%s", welcomeText);
 
     float buttonWidth = 250.0f;
     float buttonHeight = 60.0f;
@@ -111,7 +117,7 @@ void GameUI::drawStartScreen(AppState &currentState, GLFWwindow *window,
 
     ImGui::SetCursorPos(ImVec2(buttonStartX, windowHeight * 0.60f));
     if (ImGui::Button("START GAME", ImVec2(buttonWidth, buttonHeight))) {
-        game.restartGame(); 
+        game.restartGame();
         currentState = AppState::InGame;
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     }
@@ -125,7 +131,7 @@ void GameUI::drawStartScreen(AppState &currentState, GLFWwindow *window,
     ImGui::End();
 }
 
-void GameUI::drawSettings(AppState &currentState, Game &game) { // Odbiera Game&
+void GameUI::drawSettings(AppState &currentState, Game &game) {
     ImGuiIO &io = ImGui::GetIO();
     ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f));
     ImGui::SetNextWindowSize(io.DisplaySize);
@@ -133,7 +139,7 @@ void GameUI::drawSettings(AppState &currentState, Game &game) { // Odbiera Game&
     ImGui::Begin("Settings", nullptr, ImGuiWindowFlags_NoDecoration);
 
     ImGui::GetWindowDrawList()->AddRectFilled(ImVec2(0, 0), io.DisplaySize,
-                                              IM_COL32(40, 30, 25, 255));
+                                              IM_COL32(10, 45, 30, 255));
 
     float windowWidth = io.DisplaySize.x;
     float windowHeight = io.DisplaySize.y;
@@ -162,15 +168,13 @@ void GameUI::drawSettings(AppState &currentState, Game &game) { // Odbiera Game&
     float panelHeight = 300.0f;
     float panelX = (windowWidth - panelWidth) * 0.5f;
 
-    ImGui::SetCursorPos(ImVec2(panelX, windowHeight * 0.45f));
+    ImGui::SetCursorPos(ImVec2(panelX, windowHeight * 0.50f));
     ImGui::BeginChild("SettingsPanel", ImVec2(panelWidth, panelHeight), true);
 
     if (ImGui::BeginTabBar("Tabs")) {
 
         if (ImGui::BeginTabItem("Player")) {
             ImGui::Spacing();
-
-            // Modyfikuje bezpośrednio game.settings!
             ImGui::Checkbox("Show Game Time", &game.settings.displayTime);
             ImGui::Spacing();
 
@@ -193,11 +197,8 @@ void GameUI::drawSettings(AppState &currentState, Game &game) { // Odbiera Game&
 
         if (ImGui::BeginTabItem("Developer")) {
             ImGui::Spacing();
-
-            // Modyfikuje bezpośrednio game.settings!
             ImGui::Checkbox("Show Stats (FPS, Draw Calls)",
                             &game.settings.showStats);
-
             ImGui::Spacing();
             ImGui::Separator();
             ImGui::Spacing();
@@ -225,7 +226,7 @@ void GameUI::drawGameOver(AppState &currentState, Game &game,
     ImGui::Begin("GameOver", nullptr, ImGuiWindowFlags_NoDecoration);
 
     ImGui::GetWindowDrawList()->AddRectFilled(ImVec2(0, 0), io.DisplaySize,
-                                              IM_COL32(60, 10, 10, 240));
+                                              IM_COL32(60, 10, 10, 255));
 
     float windowWidth = io.DisplaySize.x;
     float windowHeight = io.DisplaySize.y;
