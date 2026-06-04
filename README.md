@@ -13,11 +13,22 @@ Oftentimes when trying to use `-fsanitize=address` it detects leaks that we are 
 
 ## Benchmarks
 
-##### Maximum number of bullets to sustain a certain fps level
+##### Benchmarked devices:
 
-| Device | CPU           | GPU      | OS      | Instancing | 30 fps | 60 fps |
-| ------ | ------------- | -------- | ------- | ---------- | ------ | ------ |
-| Laptop | i7-9750H      | UHD 630  | Windows | On         | ~75k   | ~30k   |
-| Laptop | i7-9750H      | UHD 630  | Windows | Off        | ~16k   | ~8k    |
-| PC     | Ryzen 9 9950X | RTX 5070 | Linux   | On         | ~300k  | ~200k  |
-| PC     | Ryzen 9 9950X | RTX 5070 | Linux   | Off        | ~40k   | ~20k   |
+| Device | CPU           | GPU      | OS      |
+| ------ | ------------- | -------- | ------- |
+| Laptop | i7-9750H      | UHD 630  | Windows |
+| PC     | Ryzen 9 9950X | RTX 5070 | Linux   |
+
+##### Maximum number of bullets to sustain a certain fps level:
+
+| Device | Collisions | Instancing | 30 fps | 60 fps |
+| ------ | ---------- | ---------- | ------ | ------ |
+| PC     | Off        | Off        | ~40k   | ~20k   |
+| PC     | Off        | On         | ~400k  | ~220k  |
+| PC     | On         | Off        | ~40k   | ~20k   |
+| PC     | On         | On         | ~280k  | ~170k  |
+| Laptop | Off        | Off        | -      | -      |
+| Laptop | Off        | On         | -      | -      |
+| Laptop | On\*       | Off        | ~16k   | ~8k    |
+| Laptop | On\*       | On         | ~75k   | ~30k   |
