@@ -4,6 +4,7 @@
 
 #include "defines.h"
 #include "game.h"
+#include"globals.h"
 
 #include "ui.h"
 
@@ -184,8 +185,11 @@ void processInput(GLFWwindow *window, Game &game, float deltaTime,
     if (isPressed(window, KEYBIND_RESET)) {
         game.restartGame();
     }
-    if (isPressed(window, KEYBIND_SHOW_HITBOXES)) {
+    if (isPressed(window, KEYBIND_SHOW_HITBOXES) and !gameStateData.wasPressedBefore(KEYBIND_SHOW_HITBOXES)) {
         game.settings.showHitboxes = !game.settings.showHitboxes;
+        gameStateData.holdDownKey(KEYBIND_SHOW_HITBOXES);
+    } else if(!isPressed(window, KEYBIND_SHOW_HITBOXES)) {
+        gameStateData.releaseKey(KEYBIND_SHOW_HITBOXES);
     }
     if (isPressed(window, KEYBIND_SHOW_SPAWNING_AREAS)) {
         game.settings.showSpawningAreas = !game.settings.showSpawningAreas;
