@@ -3,7 +3,7 @@
 
 #include <glad/glad.h> // GLAD must be included before GLFW
 #include <GLFW/glfw3.h>
-#include "game.h"
+#include "../game.h"
 
 // Enum managing game states
 enum class AppState { StartScreen, Settings, InGame, GameOver, Paused };

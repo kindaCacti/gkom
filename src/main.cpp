@@ -23,8 +23,7 @@
 #include "state.h"
 #include "globals.h"
 #include "settings.h"
-
-#include "ui.h"
+#include "ui/ui.h"
 
 int main() {
     gameSettings = loadSettingsFromYaml(SETTINGS_FILE_PATH);

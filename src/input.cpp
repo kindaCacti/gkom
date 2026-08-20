@@ -6,7 +6,7 @@
 #include "game.h"
 #include"globals.h"
 
-#include "ui.h"
+#include "ui/ui.h"
 
 static bool isPressed(GLFWwindow *window, int key) {
     return glfwGetKey(window, key) == GLFW_PRESS;

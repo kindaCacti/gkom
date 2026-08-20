@@ -19,7 +19,7 @@
 // --- END WARNING SILENCE ---
 #endif
 
-#include "globals.h"
+#include "../globals.h"
 
 void GameUI::init(GLFWwindow *window) {
     IMGUI_CHECKVERSION();
